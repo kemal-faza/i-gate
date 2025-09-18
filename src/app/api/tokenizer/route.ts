@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     );
 
     const snap = new (Midtrans as any).Snap({
-      isProduction: true,
+      isProduction: false,
       serverKey: process.env.SECRET,
       clientKey: process.env.NEXT_PUBLIC_CLIENT,
     });

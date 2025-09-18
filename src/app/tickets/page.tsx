@@ -33,23 +33,83 @@ const TIERS: Tier[] = [
     label: "Regular",
     price: 100_000,
     icon: TicketIcon,
-    perks: ["General access", "Standard seating"],
+    perks: ["duduk di lantai", "gk tau"],
   },
   {
     key: "vip",
     label: "VIP",
     price: 250_000,
     icon: Crown,
-    perks: ["Priority access", "Premium seating", "Merch pack"],
+    perks: ["Priority ", "Duduk nyaman", "Dpt Merch"],
   },
   {
     key: "vvip",
     label: "VVIP",
     price: 500_000,
     icon: Gem,
-    perks: ["Backstage access", "Front row seating", "Exclusive lounge"],
+    perks: ["Bisa Tiduran", "Merch OP ++ ", "++++"],
   },
 ];
+
+const TIER_STYLES: Record<
+  TierKey,
+  {
+    ring: string;
+    hover: string;
+    border: string;
+    icon: string;
+    dot: string;
+    gradient: string;
+    shadow: string;
+    priceBg: string;
+    priceText: string;
+    priceRing: string;
+    blob: string;
+  }
+> = {
+  regular: {
+    ring: "ring-blue-500",
+    hover:
+      "hover:border-blue-400/60 hover:bg-blue-50/40 dark:hover:bg-blue-950/20",
+    border: "border-blue-500/20",
+    icon: "text-blue-600 dark:text-blue-400",
+    dot: "bg-blue-500/60",
+    gradient: "from-blue-500 to-cyan-400",
+    shadow: "shadow-blue-500/20",
+    priceBg: "bg-blue-500/10",
+    priceText: "text-blue-700 dark:text-blue-300",
+    priceRing: "ring-blue-500/20",
+    blob: "bg-blue-500",
+  },
+  vip: {
+    ring: "ring-amber-500",
+    hover:
+      "hover:border-amber-400/60 hover:bg-amber-50/40 dark:hover:bg-amber-950/20",
+    border: "border-amber-500/20",
+    icon: "text-amber-600 dark:text-amber-400",
+    dot: "bg-amber-500/60",
+    gradient: "from-amber-500 to-yellow-400",
+    shadow: "shadow-amber-500/20",
+    priceBg: "bg-amber-500/10",
+    priceText: "text-amber-700 dark:text-amber-300",
+    priceRing: "ring-amber-500/20",
+    blob: "bg-amber-500",
+  },
+  vvip: {
+    ring: "ring-fuchsia-500",
+    hover:
+      "hover:border-fuchsia-400/60 hover:bg-fuchsia-50/40 dark:hover:bg-fuchsia-950/20",
+    border: "border-fuchsia-500/20",
+    icon: "text-fuchsia-600 dark:text-fuchsia-400",
+    dot: "bg-fuchsia-500/60",
+    gradient: "from-fuchsia-500 to-rose-500",
+    shadow: "shadow-fuchsia-500/20",
+    priceBg: "bg-fuchsia-500/10",
+    priceText: "text-fuchsia-700 dark:text-fuchsia-300",
+    priceRing: "ring-fuchsia-500/20",
+    blob: "bg-fuchsia-500",
+  },
+};
 
 const CODES: Record<string, number> = {
   MURAH: 10,
@@ -163,10 +223,11 @@ export default function TicketsPage() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <header className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Tickets</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Ticketing I - GATE ヾ(≧ ▽ ≦)ゝ
+        </h1>
         <p className="text-muted-foreground mt-2">
-          Choose your ticket tier, fill in your details, and proceed to
-          checkout.
+          Pilih jenis tiket, isi data diri terus lanjutin ke pembayaran
         </p>
       </header>
 
@@ -178,25 +239,82 @@ export default function TicketsPage() {
           {TIERS.map((t) => {
             const Icon = t.icon;
             const selected = t.key === selectedTier;
+            const styles = TIER_STYLES[t.key];
+
             return (
               <Card
                 key={t.key}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selected}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedTier(t.key);
+                  }
+                }}
                 onClick={() => setSelectedTier(t.key)}
                 className={[
-                  "cursor-pointer transition-colors",
+                  "group relative cursor-pointer overflow-hidden rounded-lg border bg-card transition-all duration-200 shadow-sm hover:shadow-lg",
+                  "hover:-translate-y-0.5",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                  styles.border,
+                  styles.hover,
                   selected
-                    ? "ring-2 ring-primary bg-accent/50 border-transparent"
+                    ? [
+                        "ring-2",
+                        styles.ring,
+                        styles.shadow,
+                        "bg-muted/40",
+                        "border-transparent",
+                      ].join(" ")
                     : "",
                 ].join(" ")}
               >
+                <div
+                  className={[
+                    "pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r",
+                    styles.gradient,
+                  ].join(" ")}
+                />
+                <div
+                  className={[
+                    "pointer-events-none absolute -right-8 -bottom-10 hidden h-24 w-24 rounded-full blur-2xl opacity-25 md:block",
+                    styles.blob,
+                  ].join(" ")}
+                />
+                {t.key === "vip" && !selected ? (
+                  <span className="absolute right-2 top-2 rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-amber-500/30 backdrop-blur">
+                    Popular
+                  </span>
+                ) : null}
+                {selected ? (
+                  <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-medium ring-1 ring-foreground/10 backdrop-blur">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    Selected
+                  </span>
+                ) : null}
+
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Icon className="h-5 w-5 text-primary" />
+                        <Icon
+                          className={[
+                            "h-5 w-5 transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-3",
+                            styles.icon,
+                          ].join(" ")}
+                        />
                         <span className="font-semibold">{t.label}</span>
                       </div>
-                      <span className="text-sm font-medium">
+                      <span
+                        className={[
+                          "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1",
+                          styles.priceBg,
+                          styles.priceText,
+                          styles.priceRing,
+                        ].join(" ")}
+                      >
                         {formatIDR(t.price)}
                       </span>
                     </div>
@@ -206,7 +324,12 @@ export default function TicketsPage() {
                   <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                     {t.perks.map((p, i) => (
                       <li key={i} className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary/60" />
+                        <span
+                          className={[
+                            "h-1.5 w-1.5 rounded-full",
+                            styles.dot,
+                          ].join(" ")}
+                        />
                         {p}
                       </li>
                     ))}
@@ -227,11 +350,11 @@ export default function TicketsPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label className="text-sm font-medium" htmlFor="name">
-              Name
+              Nama
             </Label>
             <Input
               id="name"
-              placeholder="Your full name"
+              placeholder="Nama lengkap"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -244,7 +367,7 @@ export default function TicketsPage() {
             </Label>
             <Input
               id="nim"
-              placeholder="Student ID (NIM)"
+              placeholder="Nomor Induk Mahasiswa (NIM)"
               value={nim}
               onChange={(e) => setNim(e.target.value)}
               required
@@ -279,7 +402,7 @@ export default function TicketsPage() {
             <Input
               id="discountCode"
               type="text"
-              placeholder="Enter code (e.g., MURAH)"
+              placeholder="kode diskon"
               value={discountCodeInput}
               onChange={(e) => setDiscountCodeInput(e.target.value)}
             />

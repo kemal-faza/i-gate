@@ -6,6 +6,7 @@ import { ViewTransitions } from "next-view-transitions";
 import { Navbar } from "@/components/navbar/navbar";
 import { ClerkProvider } from "@clerk/nextjs";
 import Script from "next/script";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,14 +35,21 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <ClerkProvider>
-            <BackgroundGrid />
-            <Navbar />
-            <Script
-              src="https://app.midtrans.com/snap/snap.js"
-              data-client-key={process.env.NEXT_PUBLIC_CLIENT}
-              strategy="afterInteractive"
-            />
-            {children}
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <BackgroundGrid />
+              <Navbar />
+              <Script
+                src="https://app.sandbox.midtrans.com/snap/snap.js"
+                data-client-key={process.env.NEXT_PUBLIC_CLIENT}
+                strategy="afterInteractive"
+              />
+              {children}
+            </ThemeProvider>
           </ClerkProvider>
         </body>
       </html>
