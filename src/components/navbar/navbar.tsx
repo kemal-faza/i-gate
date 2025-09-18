@@ -33,34 +33,35 @@ export function Navbar() {
         <div className="flex flex-1 items-center justify-end space-x-2">
           <nav className="flex items-center">
             <AnimatedThemeToggler className="cursor-pointer pr-1.5" />
+            <>
+              <SignedOut>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost">
+                      <Cog className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem>
+                      <LockKeyholeIcon className="size-4" />
+                      <Link href="/sign-in">Sign in</Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </SignedOut>
+              <SignedIn>
+                <Link
+                  href="/admin"
+                  className="text-sm px-3 py-1 rounded-md border ml-2"
+                >
+                  Admin
+                </Link>
+                <div className="ml-2">
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              </SignedIn>
+            </>
             <MobileNav />
-
-            <SignedOut>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="icon" variant="ghost">
-                    <Cog className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>
-                    <LockKeyholeIcon className="size-4" />
-                    <Link href="/sign-in">Sign in</Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SignedOut>
-            <SignedIn>
-              <Link
-                href="/admin"
-                className="text-sm px-3 py-1 rounded-md border ml-2"
-              >
-                Admin
-              </Link>
-              <div className="ml-2">
-                <UserButton afterSignOutUrl="/" />
-              </div>
-            </SignedIn>
           </nav>
         </div>
       </div>

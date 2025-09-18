@@ -68,28 +68,6 @@ export function MobileNav() {
             </MobileLink>
           ))}
         </nav>
-        <Separator className="my-4" />
-        <div className="flex flex-col gap-3 px-4">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            Links
-          </h3>
-          <Link
-            target="_blank"
-            rel="noreferrer"
-            href={"https://github.com"}
-            className="flex items-center py-2 px-3 rounded-md hover:bg-accent/50 transition-colors"
-          >
-            <Icons.gitHub className="h-4 w-4 mr-2" /> GitHub
-          </Link>
-          <Link
-            target="_blank"
-            rel="noreferrer"
-            href={"https://github.com"}
-            className="flex items-center py-2 px-3 rounded-md hover:bg-accent/50 transition-colors"
-          >
-            <Icons.twitter className="h-4 w-4 mr-2" /> Twitter
-          </Link>
-        </div>
       </SheetContent>
     </Sheet>
   );
