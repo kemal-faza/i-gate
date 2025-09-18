@@ -130,3 +130,30 @@
   animation: none;
   mix-blend-mode: normal;
 }
+
+/* TRANSITION */
+
+.enable-view-transition::view-transition-old(root),
+.enable-view-transition::view-transition-new(root) {
+  animation: none !important;
+}
+
+.enable-view-transition::view-transition-group(root) {
+  z-index: auto !important;
+}
+
+.enable-view-transition::view-transition-image-pair(root) {
+  isolation: isolate;
+  will-change: transform, opacity, clip-path;
+  z-index: 1;
+}
+
+.enable-view-transition::view-transition-new(root) {
+  z-index: 10000;
+  animation: none !important;
+}
+
+.enable-view-transition::view-transition-old(root) {
+  z-index: 1;
+  animation: none !important;
+}
