@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import TransitionLink from "@/components/TransitionLink";
 
 export default function Home() {
   return (
@@ -30,25 +31,16 @@ export default function Home() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="border-white/30 bg-white/10 text-white hover:bg-white/20"
-            >
-              <Link href="#" aria-label="About">
+            <Button asChild variant="outline" size="lg">
+              <TransitionLink href="#" aria-label="About">
                 about
-              </Link>
+              </TransitionLink>
             </Button>
 
-            <Button
-              asChild
-              size="lg"
-              className="shadow-lg bg-white text-black hover:bg-white/90 dark:bg-white dark:text-black"
-            >
-              <Link href="/tickets" aria-label="Tickets">
-                tickets
-              </Link>
+            <Button asChild size="lg">
+              <TransitionLink href="/tickets" aria-label="Tickets">
+                belii tikett
+              </TransitionLink>
             </Button>
           </div>
         </div>

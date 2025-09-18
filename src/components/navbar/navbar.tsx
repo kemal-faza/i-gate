@@ -27,7 +27,7 @@ export function Navbar() {
     "border-transparent bg-transparent backdrop-blur-0 supports-backdrop-filter:bg-transparent";
 
   return (
-    <header className={`${headerBase} ${isHome ? transparent : solid}`}>
+    <header className={`${headerBase} ${isHome ? transparent : solid} z-99`}>
       <div className="w-full px-8 mx-auto flex h-14 max-w-(--breakpoint-2xl) items-center">
         <MainNav />
         <div className="flex flex-1 items-center justify-end space-x-2">
