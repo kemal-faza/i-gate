@@ -1,0 +1,32 @@
+.topNavHead {
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  transform-origin: top;
+}
+
+.topNavHead.hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+#LogoBaru {
+  fill: var(--foreground);
+}
+
+.logo-containerNew polygon {
+  transition: all 0.5s ease-in-out;
+  transform-origin: center;
+}
+
+.logo-containerNew:hover polygon:nth-child(1) {
+  transform: rotate(360deg);
+}
+
+.logo-containerNew:hover polygon:nth-child(2) {
+  transform: rotate(-360deg);
+  transition-delay: 0.1s;
+}
+
+.logo-containerNew:hover polygon:nth-child(3) {
+  transform: rotate(360deg);
+  transition-delay: 0.2s;
+}
