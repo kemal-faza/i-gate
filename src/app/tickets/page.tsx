@@ -70,6 +70,7 @@ export default function TicketsPage() {
   const [discountCodeInput, setDiscountCodeInput] = useState<string>("");
   const [appliedDiscountCode, setAppliedDiscountCode] = useState<string>("");
   const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const tier = useMemo(
     () => TIERS.find((t) => t.key === selectedTier)!,
@@ -102,7 +103,7 @@ export default function TicketsPage() {
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!isFormValid) return;
-    setOpen(true);
+    void checkout();
   }
 
   function resetForm() {
@@ -115,6 +116,49 @@ export default function TicketsPage() {
   }
 
   const normalizedInput = discountCodeInput.trim().toUpperCase();
+
+  async function checkout() {
+    try {
+      setIsLoading(true);
+      const items = [
+        {
+          id: tier.key.toUpperCase(),
+          name: `Tickets - ${tier.label}`,
+          price: total,
+          quantity: 1,
+        },
+      ];
+      const data = {
+        orderId: `EVT-${Date.now()}`,
+        items,
+        customer: { name, email },
+      };
+
+      const res = await fetch("/api/tokenizer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create transaction");
+      const { token } = await res.json();
+
+      if (window.snap) {
+        window.snap.pay(token, {
+          onSuccess: () => setOpen(true),
+          onPending: () => setOpen(true),
+          onError: () => alert("Payment failed. Try again."),
+          onClose: () => {},
+        });
+      } else {
+        alert("Payment SDK not loaded.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error starting payment");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
@@ -313,8 +357,12 @@ export default function TicketsPage() {
           >
             Reset
           </Button>
-          <Button type="submit" className="min-w-32" disabled={!isFormValid}>
-            Checkout
+          <Button
+            type="submit"
+            className="min-w-32"
+            disabled={!isFormValid || total <= 0 || isLoading}
+          >
+            {isLoading ? "Processing…" : "Checkout"}
           </Button>
         </div>
       </form>

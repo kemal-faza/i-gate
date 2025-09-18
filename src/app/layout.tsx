@@ -4,6 +4,7 @@ import "./globals.css";
 import BackgroundGrid from "@/components/ui/background-grid";
 import { ViewTransitions } from "next-view-transitions";
 import { Navbar } from "@/components/navbar/navbar";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,11 @@ export default function RootLayout({
         >
           <BackgroundGrid />
           <Navbar />
+          <Script
+            src="https://app.midtrans.com/snap/snap.js"
+            data-client-key={process.env.NEXT_PUBLIC_CLIENT}
+            strategy="afterInteractive"
+          />
           {children}
         </body>
       </html>

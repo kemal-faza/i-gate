@@ -20,6 +20,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.544.0",
     "midtrans-client": "^1.4.3",
+    "motion": "^12.23.15",
     "next": "15.5.3",
     "next-view-transitions": "^0.3.4",
     "react": "19.1.0",
