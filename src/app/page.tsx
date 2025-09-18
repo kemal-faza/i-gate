@@ -32,7 +32,7 @@ export default function Home() {
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button asChild variant="outline" size="lg">
-              <TransitionLink href="#" aria-label="About">
+              <TransitionLink href="/about" aria-label="About">
                 about
               </TransitionLink>
             </Button>
