@@ -4,6 +4,7 @@ import "./globals.css";
 import BackgroundGrid from "@/components/ui/background-grid";
 import { ViewTransitions } from "next-view-transitions";
 import { Navbar } from "@/components/navbar/navbar";
+import { ClerkProvider } from "@clerk/nextjs";
 import Script from "next/script";
 
 const geistSans = Geist({
@@ -32,14 +33,16 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <BackgroundGrid />
-          <Navbar />
-          <Script
-            src="https://app.midtrans.com/snap/snap.js"
-            data-client-key={process.env.NEXT_PUBLIC_CLIENT}
-            strategy="afterInteractive"
-          />
-          {children}
+          <ClerkProvider>
+            <BackgroundGrid />
+            <Navbar />
+            <Script
+              src="https://app.midtrans.com/snap/snap.js"
+              data-client-key={process.env.NEXT_PUBLIC_CLIENT}
+              strategy="afterInteractive"
+            />
+            {children}
+          </ClerkProvider>
         </body>
       </html>
     </ViewTransitions>
