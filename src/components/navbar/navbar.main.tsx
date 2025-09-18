@@ -26,8 +26,8 @@ export function MainNav() {
             href={item.href}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               isActive(item.href)
-                ? "text-neutral-800 bg-neutral-100 dark:bg-neutral-800/40 shadow-sm"
-                : "text-gray-700 dark:text-gray-300 hover:text-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800/40 hover:shadow-sm"
+                ? "text-neutral-800 dark:text-neutral-100 bg-neutral-100 dark:bg-neutral-800/40 shadow-sm"
+                : "text-gray-700 dark:text-gray-300 hover:text-neutral-800 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800/40 hover:shadow-sm"
             }`}
           >
             <Icon className="h-4 w-4" />
