@@ -63,7 +63,7 @@ export function MobileNav() {
                   : "hover:bg-accent/50 hover:text-accent-foreground"
               )}
             >
-              <span className="mr-2 text-lg">{link.emoji}</span>
+              <link.icon className="h-4 w-4 mr-2" aria-hidden="true" />
               <span>{link.name}</span>
             </MobileLink>
           ))}

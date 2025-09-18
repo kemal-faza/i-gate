@@ -1,12 +1,13 @@
-export const nav_links = [
-  {
-    name: "About",
-    href: "/about",
-    emoji: "ℹ️",
-  },
-  {
-    name: "Tickets",
-    href: "/ticket",
-    emoji: "💼",
-  },
+import type { LucideIcon } from "lucide-react";
+import { Info, Ticket } from "lucide-react";
+
+export type NavLink = {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+};
+
+export const nav_links: NavLink[] = [
+  { name: "About", href: "/about", icon: Info },
+  { name: "Tickets", href: "/ticket", icon: Ticket },
 ];

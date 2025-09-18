@@ -4,6 +4,7 @@ import { Moon, SunDim } from "lucide-react";
 import { useState, useRef } from "react";
 import { flushSync } from "react-dom";
 import { cn } from "@/lib/utils";
+import { Icons } from "./icons";
 
 type props = {
   className?: string;
@@ -52,7 +53,8 @@ export const AnimatedThemeToggler = ({ className }: props) => {
       onClick={changeTheme}
       className={cn(className)}
     >
-      {isDarkMode ? <SunDim /> : <Moon />}
+      {/* {isDarkMode ? <SunDim /> : <Moon />} */}
+      <Icons.darkLightMode className="h-5 w-5" />
     </button>
   );
 };

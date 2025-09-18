@@ -11,7 +11,7 @@ export function Navbar() {
         <MainNav />
         <div className="flex flex-1 items-center justify-end space-x-2">
           <nav className="flex items-center">
-            <AnimatedThemeToggler className="cursor-pointer" />
+            <AnimatedThemeToggler className="cursor-pointer pr-1.5" />
             <MobileNav />
           </nav>
         </div>
