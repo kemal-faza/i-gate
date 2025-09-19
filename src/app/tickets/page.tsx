@@ -16,6 +16,7 @@ import { Ticket as TicketIcon, Crown, Gem, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 type TierKey = "regular" | "vip" | "vvip";
 
@@ -131,6 +132,12 @@ export default function TicketsPage() {
   const [appliedDiscountCode, setAppliedDiscountCode] = useState<string>("");
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileError, setTurnstileError] = useState<string | null>(null);
+  const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0);
+
+  const turnstileSiteKey =
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
   const tier = useMemo(
     () => TIERS.find((t) => t.key === selectedTier)!,
@@ -160,6 +167,8 @@ export default function TicketsPage() {
     isEmailValid &&
     isDiscountValid;
 
+  const isHuman = Boolean(turnstileToken);
+
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!isFormValid) return;
@@ -173,11 +182,21 @@ export default function TicketsPage() {
     setEmail("");
     setDiscountCodeInput("");
     setAppliedDiscountCode("");
+    setTurnstileToken(null);
+    setTurnstileError(null);
+    setTurnstileWidgetKey((key) => key + 1);
   }
 
   const normalizedInput = discountCodeInput.trim().toUpperCase();
 
   async function checkout() {
+    if (!isHuman) {
+      setTurnstileError("Verify you are human before checking out.");
+      return;
+    }
+
+    let turnstileMessage: string | null = null;
+
     try {
       setIsLoading(true);
       const items = [
@@ -192,6 +211,7 @@ export default function TicketsPage() {
         orderId: `EVT-${Date.now()}`,
         items,
         customer: { name, email },
+        turnstileToken,
       };
 
       const res = await fetch("/api/tokenizer", {
@@ -199,7 +219,21 @@ export default function TicketsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to create transaction");
+
+      if (!res.ok) {
+        const payload = (await res
+          .json()
+          .catch(() => null)) as { error?: string } | null;
+
+        if (res.status === 400 || res.status === 403) {
+          turnstileMessage =
+            payload?.error ?? "Human verification failed. Please retry.";
+          setTurnstileError(turnstileMessage);
+        }
+
+        throw new Error(payload?.error ?? "Failed to create transaction");
+      }
+
       const { token } = await res.json();
 
       if (window.snap) {
@@ -220,9 +254,16 @@ export default function TicketsPage() {
       }
     } catch (e) {
       console.error(e);
-      alert("Error starting payment");
+      const message =
+        e instanceof Error ? e.message : "Error starting payment";
+      alert(message);
     } finally {
       setIsLoading(false);
+      setTurnstileToken(null);
+      setTurnstileWidgetKey((key) => key + 1);
+      if (!turnstileMessage) {
+        setTurnstileError(null);
+      }
     }
   }
 
@@ -489,10 +530,46 @@ export default function TicketsPage() {
           <Button
             type="submit"
             className="min-w-32"
-            disabled={!isFormValid || total <= 0 || isLoading}
+            disabled={!isFormValid || total <= 0 || isLoading || !isHuman}
           >
             {isLoading ? "Processing…" : "Checkout"}
           </Button>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Human Verification</Label>
+          {turnstileSiteKey ? (
+            <div className="flex flex-col gap-2">
+              <Turnstile
+                key={turnstileWidgetKey}
+                siteKey={turnstileSiteKey}
+                onSuccess={(token) => {
+                  setTurnstileToken(token);
+                  setTurnstileError(null);
+                }}
+                onError={() => {
+                  setTurnstileToken(null);
+                  setTurnstileError("Verification failed. Try reloading the widget.");
+                }}
+                onExpire={() => {
+                  setTurnstileToken(null);
+                  setTurnstileError("Verification expired. Please try again.");
+                }}
+              />
+              {turnstileError ? (
+                <p className="text-xs text-destructive">{turnstileError}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Complete the Turnstile challenge to enable checkout.
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-destructive">
+              Turnstile site key is missing. Ask an admin to configure
+              `NEXT_PUBLIC_TURNSTILE_SITE_KEY`.
+            </p>
+          )}
         </div>
       </form>
 
