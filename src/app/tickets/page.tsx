@@ -204,8 +204,14 @@ export default function TicketsPage() {
 
       if (window.snap) {
         window.snap.pay(token, {
-          onSuccess: () => setOpen(true),
-          onPending: () => setOpen(true),
+          onSuccess: () => {
+            console.log("success");
+            setOpen(true);
+          },
+          onPending: () => {
+            console.log("pending");
+            setOpen(true);
+          },
           onError: () => alert("Payment failed. Try again."),
           onClose: () => {},
         });
