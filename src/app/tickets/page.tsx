@@ -397,7 +397,7 @@ export default function TicketsPage() {
           },
           onPending: () => {
             console.log("pending");
-            setOpen(true);
+            // setOpen(true);
           },
           onError: () => alert("Payment failed. Try again."),
           onClose: () => {},
@@ -687,24 +687,7 @@ export default function TicketsPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={resetForm}
-            className="min-w-28"
-          >
-            Reset
-          </Button>
-          <Button
-            type="submit"
-            className="min-w-32"
-            disabled={!isFormValid || total <= 0 || isLoading || !isHuman}
-          >
-            {isLoading ? "Processing…" : "Checkout"}
-          </Button>
-        </div>
-
+        
         <div className="space-y-2">
           <Label className="text-sm font-medium">Human Verification</Label>
           {turnstileSiteKey ? (
@@ -731,7 +714,7 @@ export default function TicketsPage() {
                 <p className="text-xs text-destructive">{turnstileError}</p>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Complete the Turnstile challenge to enable checkout.
+                  Selesaikan tantangan Turnstile untuk mengaktifkan checkout.
                 </p>
               )}
             </div>
@@ -742,6 +725,25 @@ export default function TicketsPage() {
             </p>
           )}
         </div>
+
+        <div className="flex items-center justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={resetForm}
+            className="min-w-28"
+          >
+            Reset
+          </Button>
+          <Button
+            type="submit"
+            className="min-w-32"
+            disabled={!isFormValid || total <= 0 || isLoading || !isHuman}
+          >
+            {isLoading ? "Processing…" : "Checkout"}
+          </Button>
+        </div>
+
       </form>
 
       <Dialog open={open} onOpenChange={setOpen}>

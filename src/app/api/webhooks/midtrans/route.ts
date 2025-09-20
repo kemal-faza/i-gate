@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
   try {
     const payload = await req.json();
 
+    console.log(`Midtrans Webhook Received:`, payload);
+
     const orderId = payload?.order_id as string | undefined;
     const statusCode = payload?.status_code as string | undefined;
     const grossAmount = payload?.gross_amount as string | undefined;
