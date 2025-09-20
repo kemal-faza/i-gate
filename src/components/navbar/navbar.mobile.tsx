@@ -1,28 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetClose,
-} from "@/components/ui/sheet";
+import type { User } from "@supabase/supabase-js";
+import { LockKeyholeIcon, Menu } from "lucide-react";
+import Link, { type LinkProps } from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
-import Link, { LinkProps } from "next/link";
-import { useRouter, usePathname } from "next/navigation";
 import { Icons } from "@/components/ui/icons";
 import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { DialogTitle } from "../ui/dialog";
 import { nav_links } from "./navbar.static";
 
-export function MobileNav() {
+type MobileNavProps = {
+  user: User | null;
+  onSignOut: () => Promise<void> | void;
+  isSigningOut: boolean;
+};
+
+export function MobileNav({ user, onSignOut, isSigningOut }: MobileNavProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   // Close mobile nav when route changes
   useEffect(() => {
+    if (!pathname) return;
     setOpen(false);
   }, [pathname]);
 
@@ -38,7 +41,8 @@ export function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="pr-0 w-full">
-        <DialogTitle>
+        <Separator className="my-4" />
+        <nav className="flex flex-col gap-4 px-4">
           <MobileLink
             onOpenChange={setOpen}
             href="/"
@@ -47,10 +51,6 @@ export function MobileNav() {
             <Icons.logoNew className="mr-2 h-5 w-5" />
             <span className="font-bold text-lg">{"myudak"}</span>
           </MobileLink>
-        </DialogTitle>
-        <div className="flex items-center justify-between pr-4"></div>
-        <Separator className="my-4" />
-        <nav className="flex flex-col gap-4 px-4">
           {nav_links.map((link) => (
             <MobileLink
               key={link.name}
@@ -60,13 +60,36 @@ export function MobileNav() {
                 "flex items-center py-2 px-3 rounded-md transition-colors",
                 pathname === link.href
                   ? "bg-accent text-accent-foreground font-medium"
-                  : "hover:bg-accent/50 hover:text-accent-foreground"
+                  : "hover:bg-accent/50 hover:text-accent-foreground",
               )}
             >
               <link.icon className="h-4 w-4 mr-2" aria-hidden="true" />
               <span>{link.name}</span>
             </MobileLink>
           ))}
+          <Separator className="my-4" />
+          {user ? (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setOpen(false);
+                void onSignOut();
+              }}
+              disabled={isSigningOut}
+              className="mb-4"
+            >
+              {isSigningOut ? "Signing out…" : "Sign out"}
+            </Button>
+          ) : (
+            <MobileLink
+              onOpenChange={setOpen}
+              href="/sign-in"
+              className="flex items-center justify-center rounded-md border py-2 mb-4"
+            >
+              <LockKeyholeIcon className="mr-2 h-4 w-4" />
+              Sign in
+            </MobileLink>
+          )}
         </nav>
       </SheetContent>
     </Sheet>

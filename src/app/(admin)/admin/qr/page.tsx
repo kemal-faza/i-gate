@@ -1,13 +1,17 @@
-import React from "react";
-import QRScannerPage from "./client-page";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { getSupabaseServerClient } from "@/lib/supabase/server-client";
+import QRScannerPage from "./client-page";
 
 const page = async () => {
-  const { userId } = await auth();
-  if (!userId) {
+  const supabase = getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     redirect("/sign-in");
   }
+
   return <QRScannerPage />;
 };
 

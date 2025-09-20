@@ -1,12 +1,16 @@
-import React from "react";
-import AdminDashboard from "./_components/AdminDashboard";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { getSupabaseServerClient } from "@/lib/supabase/server-client";
+import AdminDashboard from "./_components/AdminDashboard";
 
 export default async function Page() {
-  const { userId } = await auth();
-  if (!userId) {
+  const supabase = getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     redirect("/sign-in");
   }
+
   return <AdminDashboard />;
 }

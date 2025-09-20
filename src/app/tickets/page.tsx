@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import type { LucideIcon } from "lucide-react";
+import { CheckCircle2, Crown, Gem, Ticket as TicketIcon } from "lucide-react";
+import type { FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -12,11 +14,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Ticket as TicketIcon, Crown, Gem, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Turnstile } from "@marsidev/react-turnstile";
+import { Separator } from "@/components/ui/separator";
 
 type TierKey = "regular" | "vip" | "vvip";
 
@@ -26,6 +26,17 @@ type Tier = {
   price: number;
   icon: LucideIcon;
   perks: string[];
+};
+
+type DiscountRow = {
+  id: string;
+  code: string;
+  percent_off: number;
+  description?: string | null;
+  active: boolean;
+  max_uses?: number | null;
+  usage_count?: number | null;
+  expires_at?: string | null;
 };
 
 const TIERS: Tier[] = [
@@ -112,10 +123,6 @@ const TIER_STYLES: Record<
   },
 };
 
-const CODES: Record<string, number> = {
-  MURAH: 10,
-};
-
 const formatIDR = (n: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -129,38 +136,148 @@ export default function TicketsPage() {
   const [nim, setNim] = useState("");
   const [email, setEmail] = useState("");
   const [discountCodeInput, setDiscountCodeInput] = useState<string>("");
-  const [appliedDiscountCode, setAppliedDiscountCode] = useState<string>("");
+  const [appliedDiscount, setAppliedDiscount] = useState<DiscountRow | null>(
+    null,
+  );
+  const [discountCodes, setDiscountCodes] = useState<DiscountRow[]>([]);
+  const [discountsLoading, setDiscountsLoading] = useState(false);
+  const [discountsError, setDiscountsError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileError, setTurnstileError] = useState<string | null>(null);
   const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0);
+  const [currentOrder, setCurrentOrder] = useState<{
+    orderId: string;
+    orderUuid: string;
+  } | null>(null);
 
-  const turnstileSiteKey =
-    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
-  const tier = useMemo(
-    () => TIERS.find((t) => t.key === selectedTier)!,
-    [selectedTier]
+  const loadDiscounts = useCallback(async () => {
+    setDiscountsLoading(true);
+    try {
+      const res = await fetch("/api/discounts", { cache: "no-store" });
+      if (!res.ok) {
+        const errorPayload = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(errorPayload?.error ?? "Failed to load discount codes");
+      }
+
+      const payload = (await res.json()) as {
+        discounts?: DiscountRow[];
+      };
+
+      setDiscountCodes(payload.discounts ?? []);
+      setDiscountsError(null);
+    } catch (error) {
+      console.error(error);
+      setDiscountsError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load discount codes",
+      );
+    } finally {
+      setDiscountsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        await loadDiscounts();
+      } catch (error) {
+        if (active) {
+          console.error("loadDiscounts error", error);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [loadDiscounts]);
+
+  const findValidDiscount = useCallback(
+    (code: string | null | undefined) => {
+      if (!code) return null;
+      const normalized = code.trim().toUpperCase();
+      if (!normalized) return null;
+
+      const entry = discountCodes.find(
+        (discount) => discount.code.toUpperCase() === normalized,
+      );
+
+      if (!entry) return null;
+      if (!entry.active) return null;
+
+      if (entry.expires_at) {
+        const expiresAt = new Date(entry.expires_at).getTime();
+        if (!Number.isNaN(expiresAt) && expiresAt < Date.now()) {
+          return null;
+        }
+      }
+
+      if (
+        typeof entry.max_uses === "number" &&
+        typeof entry.usage_count === "number" &&
+        entry.max_uses >= 0 &&
+        entry.usage_count >= entry.max_uses
+      ) {
+        return null;
+      }
+
+      return entry;
+    },
+    [discountCodes],
   );
 
-  const discountPercent = useMemo(() => {
-    const code = appliedDiscountCode.trim().toUpperCase();
-    return CODES[code] ?? 0;
-  }, [appliedDiscountCode]);
+  useEffect(() => {
+    if (!appliedDiscount) return;
+    const refreshed = findValidDiscount(appliedDiscount.code);
+    if (!refreshed) {
+      setAppliedDiscount(null);
+      return;
+    }
+
+    if (
+      refreshed.id !== appliedDiscount.id ||
+      refreshed.percent_off !== appliedDiscount.percent_off ||
+      refreshed.active !== appliedDiscount.active ||
+      refreshed.max_uses !== appliedDiscount.max_uses ||
+      refreshed.usage_count !== appliedDiscount.usage_count ||
+      refreshed.expires_at !== appliedDiscount.expires_at
+    ) {
+      setAppliedDiscount(refreshed);
+    }
+  }, [appliedDiscount, findValidDiscount]);
+
+  const tier = useMemo(() => {
+    const fallback = TIERS[0];
+    return TIERS.find((t) => t.key === selectedTier) ?? fallback;
+  }, [selectedTier]);
+
+  const normalizedInput = discountCodeInput.trim().toUpperCase();
+
+  const discountPercent = appliedDiscount?.percent_off ?? 0;
 
   const inputPreviewPercent = useMemo(() => {
-    const code = discountCodeInput.trim().toUpperCase();
-    return CODES[code] ?? 0;
-  }, [discountCodeInput]);
+    if (!normalizedInput) return 0;
+    const result = findValidDiscount(normalizedInput);
+    return result?.percent_off ?? 0;
+  }, [findValidDiscount, normalizedInput]);
 
   const subtotal = tier.price;
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const total = Math.max(0, subtotal - discountAmount);
 
   const isEmailValid = email.trim().length > 3 && email.includes("@");
-  const isDiscountValid =
-    appliedDiscountCode.trim().length === 0 || discountPercent > 0;
+  const isDiscountValid = useMemo(() => {
+    if (!appliedDiscount) return true;
+    return Boolean(findValidDiscount(appliedDiscount.code));
+  }, [appliedDiscount, findValidDiscount]);
   const isFormValid =
     name.trim().length > 0 &&
     nim.trim().length > 0 &&
@@ -169,7 +286,7 @@ export default function TicketsPage() {
 
   const isHuman = Boolean(turnstileToken);
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!isFormValid) return;
     void checkout();
@@ -181,13 +298,12 @@ export default function TicketsPage() {
     setNim("");
     setEmail("");
     setDiscountCodeInput("");
-    setAppliedDiscountCode("");
+    setAppliedDiscount(null);
     setTurnstileToken(null);
     setTurnstileError(null);
     setTurnstileWidgetKey((key) => key + 1);
+    setCurrentOrder(null);
   }
-
-  const normalizedInput = discountCodeInput.trim().toUpperCase();
 
   async function checkout() {
     if (!isHuman) {
@@ -199,42 +315,86 @@ export default function TicketsPage() {
 
     try {
       setIsLoading(true);
-      const items = [
-        {
-          id: tier.key.toUpperCase(),
-          name: `Tickets - ${tier.label}`,
-          price: total,
-          quantity: 1,
-        },
-      ];
-      const data = {
-        orderId: `EVT-${Date.now()}`,
-        items,
+      const orderUuid = crypto.randomUUID();
+      const orderId = `EVT-${Date.now()}`;
+      const discountCode = appliedDiscount?.code ?? null;
+
+      const tokenizerPayload = {
+        orderId,
+        tierKey: tier.key,
         customer: { name, email },
         turnstileToken,
+        discountCode,
+      };
+
+      const orderRecord = {
+        id: orderUuid,
+        orderId,
+        tierKey: tier.key,
+        tierLabel: tier.label,
+        total,
+        status: "pending" as const,
+        name,
+        nim,
+        email,
+        discountCode,
+        discountPercent,
       };
 
       const res = await fetch("/api/tokenizer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(tokenizerPayload),
       });
 
       if (!res.ok) {
-        const payload = (await res
-          .json()
-          .catch(() => null)) as { error?: string } | null;
+        const payload = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
 
         if (res.status === 400 || res.status === 403) {
-          turnstileMessage =
-            payload?.error ?? "Human verification failed. Please retry.";
-          setTurnstileError(turnstileMessage);
+          const errorMessage = payload?.error ?? "Request rejected";
+
+          if (errorMessage.toLowerCase().includes("human")) {
+            turnstileMessage =
+              payload?.error ?? "Human verification failed. Please retry.";
+            setTurnstileError(turnstileMessage);
+          } else if (errorMessage.toLowerCase().includes("discount")) {
+            setAppliedDiscount(null);
+            setDiscountsError(errorMessage);
+          }
         }
 
         throw new Error(payload?.error ?? "Failed to create transaction");
       }
 
       const { token } = await res.json();
+
+      setCurrentOrder({ orderId, orderUuid });
+      setDiscountsError(null);
+
+      let pendingSaved = false;
+      const persistPending = async () => {
+        if (pendingSaved) return;
+        pendingSaved = true;
+        try {
+          const response = await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(orderRecord),
+          });
+
+          if (!response.ok) {
+            const payload = await response.json().catch(() => null);
+            throw new Error(payload?.error ?? "Failed to store order");
+          }
+
+          await loadDiscounts();
+        } catch (error) {
+          pendingSaved = false;
+          console.error("Failed to persist pending order", error);
+        }
+      };
 
       if (window.snap) {
         window.snap.pay(token, {
@@ -244,6 +404,7 @@ export default function TicketsPage() {
           },
           onPending: () => {
             console.log("pending");
+            void persistPending();
             setOpen(true);
           },
           onError: () => alert("Payment failed. Try again."),
@@ -254,8 +415,7 @@ export default function TicketsPage() {
       }
     } catch (e) {
       console.error(e);
-      const message =
-        e instanceof Error ? e.message : "Error starting payment";
+      const message = e instanceof Error ? e.message : "Error starting payment";
       alert(message);
     } finally {
       setIsLoading(false);
@@ -288,35 +448,37 @@ export default function TicketsPage() {
             const selected = t.key === selectedTier;
             const styles = TIER_STYLES[t.key];
 
+            const buttonClass = [
+              "group relative w-full cursor-pointer overflow-hidden rounded-lg border bg-card transition-all duration-200 shadow-sm hover:shadow-lg",
+              "hover:-translate-y-0.5",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              styles.border,
+              styles.hover,
+            ];
+
+            if (selected) {
+              buttonClass.push(
+                "ring-2",
+                styles.ring,
+                styles.shadow,
+                "bg-muted/40",
+                "border-transparent",
+              );
+            }
+
             return (
-              <Card
+              <button
                 key={t.key}
-                role="button"
-                tabIndex={0}
+                type="button"
+                className={buttonClass.join(" ")}
                 aria-pressed={selected}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
+                onClick={() => setSelectedTier(t.key)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
                     setSelectedTier(t.key);
                   }
                 }}
-                onClick={() => setSelectedTier(t.key)}
-                className={[
-                  "group relative cursor-pointer overflow-hidden rounded-lg border bg-card transition-all duration-200 shadow-sm hover:shadow-lg",
-                  "hover:-translate-y-0.5",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                  styles.border,
-                  styles.hover,
-                  selected
-                    ? [
-                        "ring-2",
-                        styles.ring,
-                        styles.shadow,
-                        "bg-muted/40",
-                        "border-transparent",
-                      ].join(" ")
-                    : "",
-                ].join(" ")}
               >
                 <div
                   className={[
@@ -342,35 +504,36 @@ export default function TicketsPage() {
                   </span>
                 ) : null}
 
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Icon
-                          className={[
-                            "h-5 w-5 transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-3",
-                            styles.icon,
-                          ].join(" ")}
-                        />
-                        <span className="font-semibold">{t.label}</span>
-                      </div>
-                      <span
+                <div className="px-6 pb-2 pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Icon
                         className={[
-                          "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1",
-                          styles.priceBg,
-                          styles.priceText,
-                          styles.priceRing,
+                          "h-5 w-5 transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-3",
+                          styles.icon,
                         ].join(" ")}
-                      >
-                        {formatIDR(t.price)}
-                      </span>
+                      />
+                      <span className="font-semibold">{t.label}</span>
                     </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
+                    <span
+                      className={[
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1",
+                        styles.priceBg,
+                        styles.priceText,
+                        styles.priceRing,
+                      ].join(" ")}
+                    >
+                      {formatIDR(t.price)}
+                    </span>
+                  </div>
+                </div>
+                <div className="px-6 pb-6">
                   <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                    {t.perks.map((p, i) => (
-                      <li key={i} className="flex items-center gap-2">
+                    {t.perks.map((p, index) => (
+                      <li
+                        key={`${t.key}-${p}-${index}`}
+                        className="flex items-center gap-2"
+                      >
                         <span
                           className={[
                             "h-1.5 w-1.5 rounded-full",
@@ -381,8 +544,8 @@ export default function TicketsPage() {
                       </li>
                     ))}
                   </ul>
-                </CardContent>
-              </Card>
+                </div>
+              </button>
             );
           })}
         </div>
@@ -455,25 +618,39 @@ export default function TicketsPage() {
             />
             <Button
               type="button"
-              onClick={() => setAppliedDiscountCode(normalizedInput)}
+              onClick={() => {
+                const result = findValidDiscount(normalizedInput);
+                if (result) {
+                  setAppliedDiscount(result);
+                  setDiscountCodeInput(result.code);
+                } else {
+                  setAppliedDiscount(null);
+                }
+              }}
               disabled={
                 normalizedInput.length === 0 ||
-                appliedDiscountCode.trim().toUpperCase() === normalizedInput
+                !!(
+                  appliedDiscount &&
+                  appliedDiscount.code.toUpperCase() === normalizedInput
+                ) ||
+                discountsLoading
               }
             >
               Apply
             </Button>
           </div>
-          {appliedDiscountCode ? (
-            discountPercent > 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Code applied: {appliedDiscountCode.toUpperCase()} (
-                {discountPercent}% off)
-              </p>
-            ) : (
-              <p className="text-xs text-destructive">Invalid code.</p>
-            )
-          ) : discountCodeInput ? (
+          {discountsError ? (
+            <p className="text-xs text-destructive">{discountsError}</p>
+          ) : discountsLoading ? (
+            <p className="text-xs text-muted-foreground">
+              Loading discount codes…
+            </p>
+          ) : appliedDiscount ? (
+            <p className="text-xs text-muted-foreground">
+              Code applied: {appliedDiscount.code.toUpperCase()} (
+              {discountPercent}% off)
+            </p>
+          ) : normalizedInput ? (
             inputPreviewPercent > 0 ? (
               <p className="text-xs text-muted-foreground">
                 This code gives {inputPreviewPercent}% off. Click Apply.
@@ -549,7 +726,9 @@ export default function TicketsPage() {
                 }}
                 onError={() => {
                   setTurnstileToken(null);
-                  setTurnstileError("Verification failed. Try reloading the widget.");
+                  setTurnstileError(
+                    "Verification failed. Try reloading the widget.",
+                  );
                 }}
                 onExpire={() => {
                   setTurnstileToken(null);
@@ -587,6 +766,13 @@ export default function TicketsPage() {
 
           <div className="rounded-md border p-4 text-sm">
             <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Order ID</span>
+              <span className="font-medium">
+                {currentOrder?.orderId ?? "—"}
+              </span>
+            </div>
+            <Separator className="my-3" />
+            <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Name</span>
               <span className="font-medium">{name}</span>
             </div>
@@ -611,7 +797,7 @@ export default function TicketsPage() {
               <span className="text-muted-foreground">Discount</span>
               <span className="font-medium">
                 {discountPercent > 0
-                  ? `${discountPercent}% (-${formatIDR(discountAmount)})`
+                  ? `${appliedDiscount?.code?.toUpperCase() ?? "Applied"} (${discountPercent}% / -${formatIDR(discountAmount)})`
                   : `None (-${formatIDR(0)})`}
               </span>
             </div>
