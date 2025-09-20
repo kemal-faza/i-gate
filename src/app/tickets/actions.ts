@@ -107,7 +107,7 @@ export async function createMidtransTokenAction(input: CreateSnapTokenInput) {
     throw new Error("Server misconfiguration");
   }
 
-  const requestHeaders = headers();
+  const requestHeaders = await headers();
   const remoteIp =
     requestHeaders.get("cf-connecting-ip") ??
     requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ??
