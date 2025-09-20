@@ -78,9 +78,9 @@ export default function SignInPage() {
       <div className="w-full max-w-md rounded-xl border bg-card p-8 shadow-sm">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-xl font-semibold">
-            {mode === "sign-in" ? "Sign in" : "Create an account"}
+            {mode === "sign-in" ? "Sign in ADMIN" : "Create an account"}
           </h1>
-          <Button
+          {/* <Button
             variant="link"
             onClick={() => {
               setMode((prev) => (prev === "sign-in" ? "sign-up" : "sign-in"));
@@ -89,7 +89,7 @@ export default function SignInPage() {
             }}
           >
             {mode === "sign-in" ? "Need an account?" : "Have an account?"}
-          </Button>
+          </Button> */}
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
