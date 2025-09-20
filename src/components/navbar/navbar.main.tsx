@@ -15,7 +15,8 @@ export function MainNav() {
   return (
     <nav className="flex items-center space-x-4 lg:space-x-6">
       <TransitionLink href="/" className="mr-6 flex items-center space-x-2">
-        <Icons.logoNew className="h-6 w-6 logo-containerNew" />
+        {/* <Icons.logoNew className="h-6 w-6 logo-containerNew" /> */}
+        i gate
         <span className="sr-only">My site Icon</span>
       </TransitionLink>
       <div className="hidden lg:flex items-center space-x-4">

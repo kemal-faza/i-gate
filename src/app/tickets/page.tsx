@@ -17,8 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-
-type TierKey = "regular" | "vip" | "vvip";
+import { TIER_PRICING, type TierKey } from "@/lib/tickets/pricing";
+import { createMidtransTokenAction, validateDiscountAction } from "./actions";
 
 type Tier = {
   key: TierKey;
@@ -38,22 +38,22 @@ type AppliedDiscount = {
 const TIERS: Tier[] = [
   {
     key: "regular",
-    label: "Regular",
-    price: 100_000,
+    label: TIER_PRICING.regular.label,
+    price: TIER_PRICING.regular.price,
     icon: TicketIcon,
     perks: ["duduk di lantai", "gk tau"],
   },
   {
     key: "vip",
-    label: "VIP",
-    price: 250_000,
+    label: TIER_PRICING.vip.label,
+    price: TIER_PRICING.vip.price,
     icon: Crown,
     perks: ["Priority ", "Duduk nyaman", "Dpt Merch"],
   },
   {
     key: "vvip",
-    label: "VVIP",
-    price: 500_000,
+    label: TIER_PRICING.vvip.label,
+    price: TIER_PRICING.vvip.price,
     icon: Gem,
     perks: ["Bisa Tiduran", "Merch OP ++ ", "++++"],
   },
@@ -239,23 +239,16 @@ export default function TicketsPage() {
     setIsApplyingDiscount(true);
     setDiscountError(null);
     try {
-      const res = await fetch("/api/discounts/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: normalizedInput }),
-      });
+      const { discount } = await validateDiscountAction(normalizedInput);
+      const applied: AppliedDiscount = {
+        id: discount.id,
+        code: discount.code,
+        percent_off: discount.percent_off,
+        description: discount.description,
+      };
 
-      const payload = (await res.json().catch(() => null)) as {
-        discount?: AppliedDiscount;
-        error?: string;
-      } | null;
-
-      if (!res.ok || !payload?.discount) {
-        throw new Error(payload?.error ?? "Invalid discount code");
-      }
-
-      setAppliedDiscount(payload.discount);
-      setDiscountCodeInput(payload.discount.code);
+      setAppliedDiscount(applied);
+      setDiscountCodeInput(applied.code);
       setDiscountError(null);
     } catch (error) {
       setAppliedDiscount(null);
@@ -280,48 +273,13 @@ export default function TicketsPage() {
       const orderUuid = crypto.randomUUID();
       const discountCode = appliedDiscount?.code ?? null;
 
-      const tokenizerPayload = {
+      const { token } = await createMidtransTokenAction({
         orderUuid,
         tierKey: tier.key,
         customer: { name, email, nim },
-        turnstileToken,
+        turnstileToken: turnstileToken ?? "",
         discountCode,
-      };
-
-      const res = await fetch("/api/payments/midtrans/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(tokenizerPayload),
       });
-
-      if (!res.ok) {
-        const payload = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-
-        if (res.status === 400 || res.status === 403) {
-          const errorMessage = payload?.error ?? "Request rejected";
-
-          if (errorMessage.toLowerCase().includes("human")) {
-            turnstileMessage =
-              payload?.error ?? "Human verification failed. Please retry.";
-            setTurnstileError(turnstileMessage);
-          } else if (errorMessage.toLowerCase().includes("discount")) {
-            setAppliedDiscount(null);
-            setDiscountError(errorMessage);
-          }
-        }
-
-        throw new Error(payload?.error ?? "Failed to create transaction");
-      }
-
-      const { token } = (await res.json()) as {
-        token?: string;
-      };
-
-      if (!token) {
-        throw new Error("Missing transaction token");
-      }
 
       setCurrentOrderId(orderUuid);
       setDiscountError(null);
@@ -345,7 +303,17 @@ export default function TicketsPage() {
     } catch (e) {
       console.error(e);
       const message = e instanceof Error ? e.message : "Error starting payment";
-      alert(message);
+      const lower = message.toLowerCase();
+
+      if (lower.includes("human")) {
+        turnstileMessage = message;
+        setTurnstileError(message);
+      } else if (lower.includes("discount")) {
+        setAppliedDiscount(null);
+        setDiscountError(message);
+      } else {
+        alert(message);
+      }
     } finally {
       setIsLoading(false);
       setTurnstileToken(null);
