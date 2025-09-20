@@ -151,6 +151,33 @@ export default function TicketsPage() {
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
+  useEffect(() => {
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
+    if (!clientKey) {
+      console.warn("Midtrans client key is not configured");
+      return;
+    }
+
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      "script[data-midtrans-script]",
+    );
+    if (existingScript) return;
+
+    const isProd = process.env.NEXT_PUBLIC_MIDTRANS_IS_PROD === "true";
+    const script = document.createElement("script");
+    script.src = isProd
+      ? "https://app.midtrans.com/snap/snap.js"
+      : "https://app.sandbox.midtrans.com/snap/snap.js";
+    script.setAttribute("data-client-key", clientKey);
+    script.setAttribute("data-midtrans-script", "true");
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      script.remove();
+    };
+  }, []);
+
   const loadDiscounts = useCallback(async () => {
     setDiscountsLoading(true);
     try {
@@ -318,25 +345,12 @@ export default function TicketsPage() {
       const tokenizerPayload = {
         orderUuid,
         tierKey: tier.key,
-        customer: { name, email },
+        customer: { name, email, nim },
         turnstileToken,
         discountCode,
       };
 
-      const orderRecord = {
-        id: orderUuid,
-        tierKey: tier.key,
-        tierLabel: tier.label,
-        total,
-        status: "pending" as const,
-        name,
-        nim,
-        email,
-        discountCode,
-        discountPercent,
-      };
-
-      const res = await fetch("/api/tokenizer", {
+      const res = await fetch("/api/payments/midtrans/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(tokenizerPayload),
@@ -363,33 +377,17 @@ export default function TicketsPage() {
         throw new Error(payload?.error ?? "Failed to create transaction");
       }
 
-      const { token } = await res.json();
+      const { token } = (await res.json()) as {
+        token?: string;
+      };
+
+      if (!token) {
+        throw new Error("Missing transaction token");
+      }
 
       setCurrentOrderId(orderUuid);
       setDiscountsError(null);
-
-      let pendingSaved = false;
-      const persistPending = async () => {
-        if (pendingSaved) return;
-        pendingSaved = true;
-        try {
-          const response = await fetch("/api/orders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(orderRecord),
-          });
-
-          if (!response.ok) {
-            const payload = await response.json().catch(() => null);
-            throw new Error(payload?.error ?? "Failed to store order");
-          }
-
-          await loadDiscounts();
-        } catch (error) {
-          pendingSaved = false;
-          console.error("Failed to persist pending order", error);
-        }
-      };
+      void loadDiscounts();
 
       if (window.snap) {
         window.snap.pay(token, {
@@ -399,7 +397,6 @@ export default function TicketsPage() {
           },
           onPending: () => {
             console.log("pending");
-            void persistPending();
             setOpen(true);
           },
           onError: () => alert("Payment failed. Try again."),

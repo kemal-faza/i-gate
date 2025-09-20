@@ -2,7 +2,6 @@ import "./globals.css";
 import type { User } from "@supabase/supabase-js";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import { ViewTransitions } from "next-view-transitions";
 import { Navbar } from "@/components/navbar/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -29,7 +28,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -49,11 +48,6 @@ export default async function RootLayout({
           >
             <BackgroundGrid />
             <Navbar user={currentUser} />
-            <Script
-              src="https://app.sandbox.midtrans.com/snap/snap.js"
-              data-client-key={process.env.NEXT_PUBLIC_CLIENT}
-              strategy="afterInteractive"
-            />
             {children}
           </ThemeProvider>
         </body>

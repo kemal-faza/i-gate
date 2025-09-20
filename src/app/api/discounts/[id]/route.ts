@@ -1,10 +1,13 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getSupabaseServerClient } from "@/lib/supabase/server-client";
 
-export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  req: Request,
+  props: { params: Promise<{ id: string }> },
+) {
   const params = await props.params;
   try {
-    const supabaseAuth = getSupabaseServerClient();
+    const supabaseAuth = await getSupabaseServerClient();
     const {
       data: { user },
     } = await supabaseAuth.auth.getUser();
@@ -95,10 +98,13 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
   }
 }
 
-export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  _req: Request,
+  props: { params: Promise<{ id: string }> },
+) {
   const params = await props.params;
   try {
-    const supabaseAuth = getSupabaseServerClient();
+    const supabaseAuth = await getSupabaseServerClient();
     const {
       data: { user },
     } = await supabaseAuth.auth.getUser();

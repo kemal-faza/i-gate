@@ -3,7 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server-client";
 
 export async function GET() {
   try {
-    const supabaseAuth = getSupabaseServerClient();
+    const supabaseAuth = await getSupabaseServerClient();
     const {
       data: { user },
     } = await supabaseAuth.auth.getUser();

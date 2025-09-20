@@ -3,7 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server-client";
 import QRScannerPage from "./client-page";
 
 const page = async () => {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
