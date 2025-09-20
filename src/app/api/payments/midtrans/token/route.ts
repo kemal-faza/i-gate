@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
         return Response.json({ error: "Amount mismatch" }, { status: 400 });
       }
     } else {
-      const { error: insertError } = await supabase.from("orders").insert({
+      const insertPayload: Record<string, unknown> = {
         id: orderUuid,
         tier_key: tierKey,
         tier_label: tier.label,
@@ -260,7 +260,15 @@ export async function POST(req: NextRequest) {
         email,
         discount_code: normalizedDiscount,
         discount_percent: discountPercent,
-      });
+      };
+
+      if (!Object.hasOwn(insertPayload, "order_id")) {
+        insertPayload.order_id = orderUuid;
+      }
+
+      const { error: insertError } = await supabase
+        .from("orders")
+        .insert(insertPayload);
 
       if (insertError) {
         console.error("Failed to create order", insertError);
