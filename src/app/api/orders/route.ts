@@ -16,7 +16,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, order_id, tier_key, tier_label, total, status, name, nim, email, discount_code, discount_percent, created_at",
+        "id, tier_key, tier_label, total, status, name, nim, email, discount_code, discount_percent, created_at",
       )
       .order("created_at", { ascending: false });
 
@@ -37,7 +37,6 @@ export async function POST(req: Request) {
     const payload = await req.json();
 
     const id = String(payload?.id ?? "");
-    const orderId = String(payload?.orderId ?? "");
     const tierKey = String(payload?.tierKey ?? "").toLowerCase();
     const tierLabel = String(payload?.tierLabel ?? "");
     const total = Number(payload?.total ?? NaN);
@@ -59,10 +58,6 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!orderId) {
-      return Response.json({ error: "Missing order id" }, { status: 400 });
-    }
-
     if (!name || !nim || !email) {
       return Response.json(
         { error: "Name, NIM, and email are required" },
@@ -82,7 +77,6 @@ export async function POST(req: Request) {
       .from("orders")
       .insert({
         id,
-        order_id: orderId,
         tier_key: tierKey,
         tier_label: tierLabel,
         total,
@@ -94,7 +88,7 @@ export async function POST(req: Request) {
         discount_percent: discountPercent,
       })
       .select(
-        "id, order_id, tier_key, tier_label, total, status, name, nim, email, discount_code, discount_percent, created_at",
+        "id, tier_key, tier_label, total, status, name, nim, email, discount_code, discount_percent, created_at",
       )
       .single();
 

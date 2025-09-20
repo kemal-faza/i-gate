@@ -36,7 +36,7 @@ export interface Event {
 
 export interface Ticket {
   id: ID;
-  order_id: ID;
+  order_uuid: ID;
   ticket_code: string; // UUID v4
   event_id: ID;
   qr_image_url?: string; // placeholder or data URL

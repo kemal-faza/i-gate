@@ -24,7 +24,7 @@ export default function QRScannerPage() {
   const [isSupported, setIsSupported] = React.useState(false);
   const [isScanning, setIsScanning] = React.useState(false);
   const [permissionError, setPermissionError] = React.useState<string | null>(
-    null
+    null,
   );
 
   const [manualCode, setManualCode] = React.useState("");
@@ -36,7 +36,7 @@ export default function QRScannerPage() {
 
   React.useEffect(() => {
     setIsSupported(
-      typeof window !== "undefined" && "BarcodeDetector" in window
+      typeof window !== "undefined" && "BarcodeDetector" in window,
     );
     if (typeof window !== "undefined" && "BarcodeDetector" in window) {
       try {
@@ -88,7 +88,7 @@ export default function QRScannerPage() {
     } catch (err: any) {
       setPermissionError(
         err?.message ??
-          "Camera permission denied or unavailable. Try manual input."
+          "Camera permission denied or unavailable. Try manual input.",
       );
       setIsScanning(false);
     }
@@ -150,7 +150,7 @@ export default function QRScannerPage() {
       setOpen(true);
       return;
     }
-    const order = orders.find((o) => o.id === ticket.order_id);
+    const order = orders.find((o) => o.id === ticket.order_uuid);
     if (!order || order.status !== "paid") {
       setResult({ kind: "not_payed", code });
       setOpen(true);
@@ -269,8 +269,8 @@ export default function QRScannerPage() {
               {result.kind === "valid"
                 ? "true"
                 : result.kind === "not_found"
-                ? "not found"
-                : "not payed"}
+                  ? "not found"
+                  : "not payed"}
             </DialogTitle>
             <DialogDescription>
               {result.code ? (

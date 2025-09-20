@@ -147,10 +147,7 @@ export default function TicketsPage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileError, setTurnstileError] = useState<string | null>(null);
   const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0);
-  const [currentOrder, setCurrentOrder] = useState<{
-    orderId: string;
-    orderUuid: string;
-  } | null>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
@@ -302,7 +299,7 @@ export default function TicketsPage() {
     setTurnstileToken(null);
     setTurnstileError(null);
     setTurnstileWidgetKey((key) => key + 1);
-    setCurrentOrder(null);
+    setCurrentOrderId(null);
   }
 
   async function checkout() {
@@ -316,11 +313,10 @@ export default function TicketsPage() {
     try {
       setIsLoading(true);
       const orderUuid = crypto.randomUUID();
-      const orderId = `EVT-${Date.now()}`;
       const discountCode = appliedDiscount?.code ?? null;
 
       const tokenizerPayload = {
-        orderId,
+        orderUuid,
         tierKey: tier.key,
         customer: { name, email },
         turnstileToken,
@@ -329,7 +325,6 @@ export default function TicketsPage() {
 
       const orderRecord = {
         id: orderUuid,
-        orderId,
         tierKey: tier.key,
         tierLabel: tier.label,
         total,
@@ -370,7 +365,7 @@ export default function TicketsPage() {
 
       const { token } = await res.json();
 
-      setCurrentOrder({ orderId, orderUuid });
+      setCurrentOrderId(orderUuid);
       setDiscountsError(null);
 
       let pendingSaved = false;
@@ -766,10 +761,8 @@ export default function TicketsPage() {
 
           <div className="rounded-md border p-4 text-sm">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Order ID</span>
-              <span className="font-medium">
-                {currentOrder?.orderId ?? "—"}
-              </span>
+              <span className="text-muted-foreground">Order UUID</span>
+              <span className="font-medium">{currentOrderId ?? "—"}</span>
             </div>
             <Separator className="my-3" />
             <div className="flex items-center justify-between">

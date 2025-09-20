@@ -32,8 +32,10 @@ const Snap = (
 
 export async function POST(req: Request) {
   try {
-    const { orderId, tierKey, customer, turnstileToken, discountCode } =
+    const { orderUuid, tierKey, customer, turnstileToken, discountCode } =
       await req.json();
+
+    const orderId = typeof orderUuid === "string" ? orderUuid.trim() : "";
 
     if (!orderId) {
       return Response.json(

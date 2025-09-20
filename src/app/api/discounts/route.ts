@@ -3,6 +3,15 @@ import { getSupabaseServerClient } from "@/lib/supabase/server-client";
 
 export async function GET() {
   try {
+    const supabaseAuth = getSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from("discount_codes")

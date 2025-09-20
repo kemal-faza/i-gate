@@ -203,7 +203,7 @@ export const orders: Order[] = [
 export const tickets: Ticket[] = [
   {
     id: "t_001",
-    order_id: "o_001",
+    order_uuid: "o_001",
     ticket_code: "550e8400-e29b-41d4-a716-446655440000",
     event_id: "e_001",
     status: "valid",
@@ -212,7 +212,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_002",
-    order_id: "o_002",
+    order_uuid: "o_002",
     ticket_code: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
     event_id: "e_001",
     status: "valid",
@@ -221,7 +221,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_003",
-    order_id: "o_003",
+    order_uuid: "o_003",
     ticket_code: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     event_id: "e_002",
     status: "used",
@@ -230,7 +230,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_004",
-    order_id: "o_004",
+    order_uuid: "o_004",
     ticket_code: "6fa459ea-ee8a-3ca4-894e-db77e160355e",
     event_id: "e_002",
     status: "void",
@@ -239,7 +239,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_005",
-    order_id: "o_005",
+    order_uuid: "o_005",
     ticket_code: "7c9e6679-7425-40de-944b-e07fc1f90ae7",
     event_id: "e_003",
     status: "valid",
@@ -248,7 +248,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_006",
-    order_id: "o_006",
+    order_uuid: "o_006",
     ticket_code: "3c5a6b0a-6f5d-4a9f-8b0e-6b0a6f5d4a9f",
     event_id: "e_003",
     status: "void",
@@ -257,7 +257,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_007",
-    order_id: "o_007",
+    order_uuid: "o_007",
     ticket_code: "1b671a64-40d5-491e-99b0-da01ff1f3341",
     event_id: "e_001",
     status: "used",
@@ -266,7 +266,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_008",
-    order_id: "o_008",
+    order_uuid: "o_008",
     ticket_code: "2a444ef4-1f89-4ac8-9bf8-d2c9d4a9b0ef",
     event_id: "e_001",
     status: "valid",
@@ -275,7 +275,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_009",
-    order_id: "o_009",
+    order_uuid: "o_009",
     ticket_code: "0f8fad5b-d9cb-469f-a165-70867728950e",
     event_id: "e_002",
     status: "valid",
@@ -284,7 +284,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_010",
-    order_id: "o_010",
+    order_uuid: "o_010",
     ticket_code: "7f0e2f1a-8b9c-4d3f-9a2b-1c3d5e7f9a2b",
     event_id: "e_003",
     status: "valid",
@@ -293,7 +293,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_011",
-    order_id: "o_005",
+    order_uuid: "o_005",
     ticket_code: "5a2b3c4d-6e7f-8a9b-0c1d-2e3f4a5b6c7d",
     event_id: "e_003",
     status: "valid",
@@ -302,7 +302,7 @@ export const tickets: Ticket[] = [
   },
   {
     id: "t_012",
-    order_id: "o_003",
+    order_uuid: "o_003",
     ticket_code: "123e4567-e89b-12d3-a456-426614174000",
     event_id: "e_002",
     status: "valid",

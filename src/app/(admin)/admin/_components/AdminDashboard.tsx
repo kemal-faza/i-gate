@@ -11,6 +11,7 @@ import {
   Trash2,
   WalletIcon,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -40,7 +41,6 @@ import { formatCurrency, formatDateTime } from "./format";
 
 type OrderRecord = {
   id: string;
-  order_id: string;
   tier_key: string;
   tier_label: string;
   total: number;
@@ -388,7 +388,7 @@ export default function AdminDashboard() {
             </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead>Order</TableHead>
+                <TableHead>Order UUID</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Tier</TableHead>
                 <TableHead>Total</TableHead>
@@ -400,8 +400,19 @@ export default function AdminDashboard() {
             <TableBody>
               {orders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell className="font-mono text-xs">
-                    {order.order_id}
+                  <TableCell className="align-top">
+                    <div className="flex flex-col items-start gap-2">
+                      <span className="font-mono break-all text-xs">
+                        {order.id}
+                      </span>
+                      <Image
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(order.id)}`}
+                        alt={`QR code for order ${order.id}`}
+                        width={120}
+                        height={120}
+                        className="rounded border bg-white p-1"
+                      />
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
