@@ -64,6 +64,22 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseAdmin();
     const nextStatus = mapStatus(transactionStatus, fraudStatus);
 
+    const { data: existingOrder, error: existingOrderError } = await supabase
+      .from("orders")
+      .select("status, discount_code")
+      .eq("id", orderId)
+      .maybeSingle();
+
+    if (existingOrderError) {
+      console.error(
+        "Failed to fetch order before webhook update",
+        existingOrderError,
+      );
+    }
+
+    const previousStatus = existingOrder?.status?.toLowerCase() ?? null;
+    const discountCode = existingOrder?.discount_code as string | null;
+
     const grossAmountNumber = Number.parseFloat(String(grossAmount));
     const grossAmountValue = Number.isFinite(grossAmountNumber)
       ? Math.round(grossAmountNumber)
@@ -91,6 +107,34 @@ export async function POST(req: NextRequest) {
     if (!data) {
       console.warn("Webhook received for unknown order", orderId);
       return Response.json({ ok: true });
+    }
+
+    if (discountCode && nextStatus === "paid" && previousStatus !== "paid") {
+      const { data: discount, error: discountFetchError } = await supabase
+        .from("discount_codes")
+        .select("usage_count")
+        .eq("code", discountCode)
+        .maybeSingle();
+
+      if (discountFetchError) {
+        console.error(
+          "Failed to fetch discount for usage increment",
+          discountFetchError,
+        );
+      } else if (discount) {
+        const newUsage = (discount.usage_count ?? 0) + 1;
+        const { error: discountUpdateError } = await supabase
+          .from("discount_codes")
+          .update({ usage_count: newUsage })
+          .eq("code", discountCode);
+
+        if (discountUpdateError) {
+          console.error(
+            "Failed to increment discount usage",
+            discountUpdateError,
+          );
+        }
+      }
     }
 
     return Response.json({ ok: true });

@@ -63,10 +63,18 @@ export async function validateDiscountCode(
   }
 
   if (discount.max_uses !== null) {
+    if (
+      typeof discount.usage_count === "number" &&
+      discount.usage_count >= discount.max_uses
+    ) {
+      throw new DiscountValidationError("Discount usage limit reached");
+    }
+
     const { count, error: countError } = await supabase
       .from("orders")
       .select("id", { head: true, count: "exact" })
-      .eq("discount_code", normalized);
+      .eq("discount_code", normalized)
+      .eq("status", "paid");
 
     if (countError) {
       throw new DiscountValidationError("Failed to validate discount", 500);
