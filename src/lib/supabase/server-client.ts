@@ -1,7 +1,7 @@
 import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
+import { cookies, type UnsafeUnwrappedCookies } from "next/headers";
 
 export function getSupabaseServerClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -11,7 +11,7 @@ export function getSupabaseServerClient(): SupabaseClient {
     throw new Error("Supabase environment variables are not configured");
   }
 
-  const cookieStore = cookies();
+  const cookieStore = (cookies() as unknown as UnsafeUnwrappedCookies);
 
   return createServerClient(url, anonKey, {
     cookies: {
