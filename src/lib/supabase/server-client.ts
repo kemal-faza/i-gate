@@ -1,7 +1,12 @@
 import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cookies, type MutableCookies } from "next/headers";
+import { cookies } from "next/headers";
+
+// Define MutableCookies type locally since it's not exported by next/headers
+type MutableCookies = {
+  set: (options: { name: string; value: string; options?: CookieOptions }) => void;
+};
 
 export async function getSupabaseServerClient(): Promise<SupabaseClient> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
