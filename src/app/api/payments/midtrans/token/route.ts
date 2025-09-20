@@ -1,6 +1,7 @@
-// @ts-ignore midtrans client type script definition is broken memang ERROR
+// @ts-expect-error midtrans client type definitions are incomplete
 import midtransClient from "midtrans-client";
 import type { NextRequest } from "next/server";
+import { DiscountValidationError, validateDiscountCode } from "@/lib/discounts";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 type TierKey = "regular" | "vip" | "vvip";
@@ -164,60 +165,31 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    const normalizedDiscount =
-      discountCodeInput && typeof discountCodeInput === "string"
-        ? discountCodeInput.trim().toUpperCase()
-        : null;
-
+    let normalizedDiscount: string | null = null;
     let discountPercent = 0;
 
-    if (normalizedDiscount) {
-      const { data: discount, error: discountError } = await supabase
-        .from("discount_codes")
-        .select("code, percent_off, active, max_uses, usage_count, expires_at")
-        .eq("code", normalizedDiscount)
-        .maybeSingle();
-
-      if (discountError || !discount) {
-        return Response.json(
-          { error: "Invalid discount code" },
-          { status: 400 },
+    if (discountCodeInput) {
+      try {
+        const validated = await validateDiscountCode(
+          supabase,
+          discountCodeInput,
         );
-      }
-
-      if (!discount.active) {
-        return Response.json(
-          { error: "Discount code is inactive" },
-          { status: 400 },
-        );
-      }
-
-      if (discount.expires_at && new Date(discount.expires_at) < new Date()) {
-        return Response.json(
-          { error: "Discount code has expired" },
-          { status: 400 },
-        );
-      }
-
-      if (discount.max_uses !== null && typeof discount.max_uses === "number") {
-        const { count, error: countError } = await supabase
-          .from("orders")
-          .select("id", { count: "exact", head: true })
-          .eq("discount_code", normalizedDiscount);
-
-        if (
-          !countError &&
-          typeof count === "number" &&
-          count >= discount.max_uses
-        ) {
+        normalizedDiscount = validated.code;
+        discountPercent = mapDiscountPercent(validated.percent_off);
+      } catch (error) {
+        if (error instanceof DiscountValidationError) {
           return Response.json(
-            { error: "Discount usage limit reached" },
-            { status: 400 },
+            { error: error.message },
+            { status: error.status },
           );
         }
-      }
 
-      discountPercent = mapDiscountPercent(discount.percent_off);
+        console.error("Discount validation failed", error);
+        return Response.json(
+          { error: "Failed to validate discount" },
+          { status: 500 },
+        );
+      }
     }
 
     const discountAmount = Math.round((tier.price * discountPercent) / 100);
@@ -254,6 +226,7 @@ export async function POST(req: NextRequest) {
         tier_key: tierKey,
         tier_label: tier.label,
         total: grossAmount,
+        gross_amount: grossAmount,
         status: "pending",
         name,
         nim,
@@ -262,9 +235,7 @@ export async function POST(req: NextRequest) {
         discount_percent: discountPercent,
       };
 
-      if (!Object.hasOwn(insertPayload, "order_id")) {
-        insertPayload.order_id = orderUuid;
-      }
+      insertPayload.order_id = orderUuid;
 
       const { error: insertError } = await supabase
         .from("orders")

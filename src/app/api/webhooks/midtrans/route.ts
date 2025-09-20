@@ -24,14 +24,14 @@ export async function POST(req: NextRequest) {
   try {
     const payload = await req.json();
 
-    console.log(`Midtrans Webhook Received:`, payload);
-
     const orderId = payload?.order_id as string | undefined;
     const statusCode = payload?.status_code as string | undefined;
     const grossAmount = payload?.gross_amount as string | undefined;
     const signatureKey = payload?.signature_key as string | undefined;
     const transactionStatus = payload?.transaction_status as string | undefined;
     const fraudStatus = payload?.fraud_status as string | undefined;
+    const paymentType = payload?.payment_type as string | undefined;
+    const transactionId = payload?.transaction_id as string | undefined;
 
     if (
       !orderId ||
@@ -64,9 +64,21 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseAdmin();
     const nextStatus = mapStatus(transactionStatus, fraudStatus);
 
+    const grossAmountNumber = Number.parseFloat(String(grossAmount));
+    const grossAmountValue = Number.isFinite(grossAmountNumber)
+      ? Math.round(grossAmountNumber)
+      : null;
+
     const { data, error } = await supabase
       .from("orders")
-      .update({ status: nextStatus })
+      .update({
+        status: nextStatus,
+        payment_type: paymentType ?? null,
+        transaction_id: transactionId ?? null,
+        gross_amount: grossAmountValue,
+        paid_at: nextStatus === "paid" ? new Date().toISOString() : null,
+        midtrans_payload: payload,
+      })
       .eq("id", orderId)
       .select("id, status")
       .maybeSingle();

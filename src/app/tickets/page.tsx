@@ -4,7 +4,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, Crown, Gem, Ticket as TicketIcon } from "lucide-react";
 import type { FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,15 +28,11 @@ type Tier = {
   perks: string[];
 };
 
-type DiscountRow = {
+type AppliedDiscount = {
   id: string;
   code: string;
   percent_off: number;
   description?: string | null;
-  active: boolean;
-  max_uses?: number | null;
-  usage_count?: number | null;
-  expires_at?: string | null;
 };
 
 const TIERS: Tier[] = [
@@ -136,12 +132,10 @@ export default function TicketsPage() {
   const [nim, setNim] = useState("");
   const [email, setEmail] = useState("");
   const [discountCodeInput, setDiscountCodeInput] = useState<string>("");
-  const [appliedDiscount, setAppliedDiscount] = useState<DiscountRow | null>(
-    null,
-  );
-  const [discountCodes, setDiscountCodes] = useState<DiscountRow[]>([]);
-  const [discountsLoading, setDiscountsLoading] = useState(false);
-  const [discountsError, setDiscountsError] = useState<string | null>(null);
+  const [appliedDiscount, setAppliedDiscount] =
+    useState<AppliedDiscount | null>(null);
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -178,106 +172,6 @@ export default function TicketsPage() {
     };
   }, []);
 
-  const loadDiscounts = useCallback(async () => {
-    setDiscountsLoading(true);
-    try {
-      const res = await fetch("/api/discounts", { cache: "no-store" });
-      if (!res.ok) {
-        const errorPayload = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        throw new Error(errorPayload?.error ?? "Failed to load discount codes");
-      }
-
-      const payload = (await res.json()) as {
-        discounts?: DiscountRow[];
-      };
-
-      setDiscountCodes(payload.discounts ?? []);
-      setDiscountsError(null);
-    } catch (error) {
-      console.error(error);
-      setDiscountsError(
-        error instanceof Error
-          ? error.message
-          : "Failed to load discount codes",
-      );
-    } finally {
-      setDiscountsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        await loadDiscounts();
-      } catch (error) {
-        if (active) {
-          console.error("loadDiscounts error", error);
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [loadDiscounts]);
-
-  const findValidDiscount = useCallback(
-    (code: string | null | undefined) => {
-      if (!code) return null;
-      const normalized = code.trim().toUpperCase();
-      if (!normalized) return null;
-
-      const entry = discountCodes.find(
-        (discount) => discount.code.toUpperCase() === normalized,
-      );
-
-      if (!entry) return null;
-      if (!entry.active) return null;
-
-      if (entry.expires_at) {
-        const expiresAt = new Date(entry.expires_at).getTime();
-        if (!Number.isNaN(expiresAt) && expiresAt < Date.now()) {
-          return null;
-        }
-      }
-
-      if (
-        typeof entry.max_uses === "number" &&
-        typeof entry.usage_count === "number" &&
-        entry.max_uses >= 0 &&
-        entry.usage_count >= entry.max_uses
-      ) {
-        return null;
-      }
-
-      return entry;
-    },
-    [discountCodes],
-  );
-
-  useEffect(() => {
-    if (!appliedDiscount) return;
-    const refreshed = findValidDiscount(appliedDiscount.code);
-    if (!refreshed) {
-      setAppliedDiscount(null);
-      return;
-    }
-
-    if (
-      refreshed.id !== appliedDiscount.id ||
-      refreshed.percent_off !== appliedDiscount.percent_off ||
-      refreshed.active !== appliedDiscount.active ||
-      refreshed.max_uses !== appliedDiscount.max_uses ||
-      refreshed.usage_count !== appliedDiscount.usage_count ||
-      refreshed.expires_at !== appliedDiscount.expires_at
-    ) {
-      setAppliedDiscount(refreshed);
-    }
-  }, [appliedDiscount, findValidDiscount]);
-
   const tier = useMemo(() => {
     const fallback = TIERS[0];
     return TIERS.find((t) => t.key === selectedTier) ?? fallback;
@@ -287,21 +181,28 @@ export default function TicketsPage() {
 
   const discountPercent = appliedDiscount?.percent_off ?? 0;
 
-  const inputPreviewPercent = useMemo(() => {
-    if (!normalizedInput) return 0;
-    const result = findValidDiscount(normalizedInput);
-    return result?.percent_off ?? 0;
-  }, [findValidDiscount, normalizedInput]);
+  const isDiscountApplied = useMemo(() => {
+    if (!appliedDiscount) return false;
+    return appliedDiscount.code.toUpperCase() === normalizedInput;
+  }, [appliedDiscount, normalizedInput]);
 
   const subtotal = tier.price;
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const total = Math.max(0, subtotal - discountAmount);
 
   const isEmailValid = email.trim().length > 3 && email.includes("@");
-  const isDiscountValid = useMemo(() => {
-    if (!appliedDiscount) return true;
-    return Boolean(findValidDiscount(appliedDiscount.code));
-  }, [appliedDiscount, findValidDiscount]);
+  const isDiscountValid = normalizedInput.length === 0 || isDiscountApplied;
+
+  useEffect(() => {
+    if (normalizedInput.length === 0) {
+      if (appliedDiscount) {
+        setAppliedDiscount(null);
+      }
+      if (discountError) {
+        setDiscountError(null);
+      }
+    }
+  }, [appliedDiscount, discountError, normalizedInput]);
   const isFormValid =
     name.trim().length > 0 &&
     nim.trim().length > 0 &&
@@ -327,6 +228,43 @@ export default function TicketsPage() {
     setTurnstileError(null);
     setTurnstileWidgetKey((key) => key + 1);
     setCurrentOrderId(null);
+  }
+
+  async function applyDiscount() {
+    if (!normalizedInput) {
+      setDiscountError("Enter a discount code first.");
+      return;
+    }
+
+    setIsApplyingDiscount(true);
+    setDiscountError(null);
+    try {
+      const res = await fetch("/api/discounts/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: normalizedInput }),
+      });
+
+      const payload = (await res.json().catch(() => null)) as {
+        discount?: AppliedDiscount;
+        error?: string;
+      } | null;
+
+      if (!res.ok || !payload?.discount) {
+        throw new Error(payload?.error ?? "Invalid discount code");
+      }
+
+      setAppliedDiscount(payload.discount);
+      setDiscountCodeInput(payload.discount.code);
+      setDiscountError(null);
+    } catch (error) {
+      setAppliedDiscount(null);
+      setDiscountError(
+        error instanceof Error ? error.message : "Failed to validate code",
+      );
+    } finally {
+      setIsApplyingDiscount(false);
+    }
   }
 
   async function checkout() {
@@ -370,7 +308,7 @@ export default function TicketsPage() {
             setTurnstileError(turnstileMessage);
           } else if (errorMessage.toLowerCase().includes("discount")) {
             setAppliedDiscount(null);
-            setDiscountsError(errorMessage);
+            setDiscountError(errorMessage);
           }
         }
 
@@ -386,8 +324,7 @@ export default function TicketsPage() {
       }
 
       setCurrentOrderId(orderUuid);
-      setDiscountsError(null);
-      void loadDiscounts();
+      setDiscountError(null);
 
       if (window.snap) {
         window.snap.pay(token, {
@@ -611,45 +548,32 @@ export default function TicketsPage() {
             <Button
               type="button"
               onClick={() => {
-                const result = findValidDiscount(normalizedInput);
-                if (result) {
-                  setAppliedDiscount(result);
-                  setDiscountCodeInput(result.code);
-                } else {
-                  setAppliedDiscount(null);
-                }
+                void applyDiscount();
               }}
               disabled={
                 normalizedInput.length === 0 ||
-                !!(
-                  appliedDiscount &&
-                  appliedDiscount.code.toUpperCase() === normalizedInput
-                ) ||
-                discountsLoading
+                isApplyingDiscount ||
+                isDiscountApplied
               }
             >
-              Apply
+              {isApplyingDiscount ? "Applying…" : "Apply"}
             </Button>
           </div>
-          {discountsError ? (
-            <p className="text-xs text-destructive">{discountsError}</p>
-          ) : discountsLoading ? (
+          {discountError ? (
+            <p className="text-xs text-destructive">{discountError}</p>
+          ) : isApplyingDiscount ? (
             <p className="text-xs text-muted-foreground">
-              Loading discount codes…
+              Validating discount code…
             </p>
-          ) : appliedDiscount ? (
+          ) : isDiscountApplied ? (
             <p className="text-xs text-muted-foreground">
-              Code applied: {appliedDiscount.code.toUpperCase()} (
+              Code applied: {appliedDiscount?.code.toUpperCase()} (
               {discountPercent}% off)
             </p>
           ) : normalizedInput ? (
-            inputPreviewPercent > 0 ? (
-              <p className="text-xs text-muted-foreground">
-                This code gives {inputPreviewPercent}% off. Click Apply.
-              </p>
-            ) : (
-              <p className="text-xs text-destructive">Invalid code.</p>
-            )
+            <p className="text-xs text-muted-foreground">
+              Click Apply to validate this discount code.
+            </p>
           ) : (
             <p className="text-xs text-muted-foreground">
               Leave empty if you don't have a code.
@@ -687,7 +611,6 @@ export default function TicketsPage() {
           </div>
         </div>
 
-        
         <div className="space-y-2">
           <Label className="text-sm font-medium">Human Verification</Label>
           {turnstileSiteKey ? (
@@ -743,7 +666,6 @@ export default function TicketsPage() {
             {isLoading ? "Processing…" : "Checkout"}
           </Button>
         </div>
-
       </form>
 
       <Dialog open={open} onOpenChange={setOpen}>

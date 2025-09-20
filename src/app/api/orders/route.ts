@@ -16,7 +16,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, tier_key, tier_label, total, status, name, nim, email, discount_code, discount_percent, created_at",
+        "id, tier_key, tier_label, total, gross_amount, payment_type, status, name, nim, email, discount_code, discount_percent, created_at",
       )
       .order("created_at", { ascending: false });
 
@@ -80,6 +80,7 @@ export async function POST(req: Request) {
         tier_key: tierKey,
         tier_label: tierLabel,
         total,
+        gross_amount: total,
         status,
         name,
         nim,
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
         discount_percent: discountPercent,
       })
       .select(
-        "id, tier_key, tier_label, total, status, name, nim, email, discount_code, discount_percent, created_at",
+        "id, tier_key, tier_label, total, gross_amount, payment_type, status, name, nim, email, discount_code, discount_percent, created_at",
       )
       .single();
 

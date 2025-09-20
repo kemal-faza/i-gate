@@ -44,6 +44,10 @@ type OrderRecord = {
   tier_key: string;
   tier_label: string;
   total: number;
+  gross_amount?: number | null;
+  payment_type?: string | null;
+  transaction_id?: string | null;
+  paid_at?: string | null;
   status: string;
   name: string;
   nim: string;
@@ -155,10 +159,14 @@ export default function AdminDashboard() {
     () => orders.filter((order) => order.status === "pending").length,
     [orders],
   );
-  const totalRevenue = useMemo(
-    () => orders.reduce((sum, order) => sum + (order.total ?? 0), 0),
-    [orders],
-  );
+  const totalRevenue = useMemo(() => {
+    return orders
+      .filter((order) => order.status.toLowerCase() === "paid")
+      .reduce((sum, order) => {
+        const gross = order.gross_amount ?? order.total ?? 0;
+        return sum + gross;
+      }, 0);
+  }, [orders]);
   const activeDiscounts = useMemo(
     () => discounts.filter((discount) => discount.active).length,
     [discounts],
@@ -388,75 +396,125 @@ export default function AdminDashboard() {
             </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead>Order UUID</TableHead>
+                <TableHead>Order</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Tier</TableHead>
                 <TableHead>Total</TableHead>
+                <TableHead>Gross Amount</TableHead>
+                <TableHead>Payment Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Discount</TableHead>
                 <TableHead>Created</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="align-top">
-                    <div className="flex flex-col items-start gap-2">
-                      <span className="font-mono break-all text-xs">
-                        {order.id}
+              {orders.map((order) => {
+                const normalizedStatus = order.status.toLowerCase();
+                const isPaid = normalizedStatus === "paid";
+                const toneClass =
+                  normalizedStatus === "paid"
+                    ? "border-emerald-500/30 bg-emerald-500/10"
+                    : normalizedStatus === "pending"
+                      ? "border-amber-500/30 bg-amber-500/10"
+                      : "border-red-500/30 bg-red-500/10";
+                const paymentLabel = order.payment_type
+                  ? order.payment_type.replace(/_/g, " ")
+                  : null;
+                const totalDisplay = formatCurrency(order.total ?? 0, "IDR");
+                const grossDisplay = formatCurrency(
+                  order.gross_amount ?? order.total ?? 0,
+                  "IDR",
+                );
+
+                return (
+                  <TableRow key={order.id}>
+                    <TableCell className="align-top">
+                      <div
+                        className={`flex flex-col items-start gap-2 rounded-md border p-3 ${toneClass}`}
+                      >
+                        {isPaid ? (
+                          <>
+                            <span className="font-mono break-all text-xs">
+                              {order.id}
+                            </span>
+                            <Image
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(order.id)}`}
+                              alt={`QR code for order ${order.id}`}
+                              width={120}
+                              height={120}
+                              className="rounded border bg-white p-1"
+                            />
+                          </>
+                        ) : (
+                          <div className="space-y-1 text-xs text-muted-foreground">
+                            <p className="font-medium text-foreground">
+                              Pending payment
+                            </p>
+                            <p>QR and UUID unlock after settlement.</p>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">
+                          {order.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {order.email}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          NIM {order.nim}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">
+                          {order.tier_label}
+                        </span>
+                        <span className="text-[10px] uppercase text-muted-foreground">
+                          {order.tier_key}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm font-semibold">
+                        {totalDisplay}
                       </span>
-                      <Image
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(order.id)}`}
-                        alt={`QR code for order ${order.id}`}
-                        width={120}
-                        height={120}
-                        className="rounded border bg-white p-1"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-sm">{order.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {order.email}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm font-semibold">
+                        {grossDisplay}
                       </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        NIM {order.nim}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">
-                        {order.tier_label}
-                      </span>
-                      <span className="text-[10px] uppercase text-muted-foreground">
-                        {order.tier_key}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-semibold">
-                      {formatCurrency(order.total, "IDR")}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={order.status} />
-                  </TableCell>
-                  <TableCell>
-                    {order.discount_code ? (
-                      <span className="text-xs font-medium">
-                        {order.discount_code} · {order.discount_percent ?? 0}%
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {formatDateTime(order.created_at)}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>
+                      {paymentLabel ? (
+                        <span className="text-xs font-medium uppercase">
+                          {paymentLabel}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={order.status} />
+                    </TableCell>
+                    <TableCell>
+                      {order.discount_code ? (
+                        <span className="text-xs font-medium">
+                          {order.discount_code} · {order.discount_percent ?? 0}%
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {formatDateTime(order.created_at)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
