@@ -196,13 +196,13 @@ export async function createMidtransTokenAction(input: CreateSnapTokenInput) {
     //   unfinish: `${baseUrl}/tickets/unfinish?uuid=${orderParam}`,
     //   error: `${baseUrl}/tickets/error?uuid=${orderParam}`,
     // },
-    credit_card: {
-      secure: true,
-    },
+    // credit_card: {
+    //   secure: true,
+    // },
   });
 
   return {
     token: transaction.token as string,
-    redirect_url: transaction.redirect_url as string,
+    // redirect_url: transaction.redirect_url as string,
   };
 }
