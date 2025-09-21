@@ -172,6 +172,8 @@ export async function createMidtransTokenAction(input: CreateSnapTokenInput) {
       ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL.replace(/\/$/, "")}`
       : "http://localhost:3000");
 
+  const orderParam = encodeURIComponent(input.orderUuid);
+
   const transaction = await snap.createTransaction({
     transaction_details: {
       order_id: input.orderUuid,
@@ -190,9 +192,9 @@ export async function createMidtransTokenAction(input: CreateSnapTokenInput) {
       email: input.customer.email,
     },
     callbacks: {
-      finish: `${baseUrl}/tickets/${input.orderUuid}/finish`,
-      unfinish: `${baseUrl}/tickets/${input.orderUuid}/unfinish`,
-      error: `${baseUrl}/tickets/${input.orderUuid}/error`,
+      finish: `${baseUrl}/tickets/finish?uuid=${orderParam}`,
+      unfinish: `${baseUrl}/tickets/unfinish?uuid=${orderParam}`,
+      error: `${baseUrl}/tickets/error?uuid=${orderParam}`,
     },
     credit_card: {
       secure: true,

@@ -3,6 +3,7 @@
 import { Turnstile } from "@marsidev/react-turnstile";
 import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, Crown, Gem, Ticket as TicketIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -127,6 +128,7 @@ const formatIDR = (n: number) =>
   }).format(n);
 
 export default function TicketsPage() {
+  const router = useRouter();
   const [selectedTier, setSelectedTier] = useState<TierKey>("regular");
   const [name, setName] = useState("");
   const [nim, setNim] = useState("");
@@ -287,8 +289,8 @@ export default function TicketsPage() {
       if (window.snap) {
         window.snap.pay(token, {
           onSuccess: () => {
-            console.log("success");
-            setOpen(true);
+            const destination = `/tickets/finish?uuid=${encodeURIComponent(orderUuid)}`;
+            router.push(destination);
           },
           onPending: () => {
             console.log("pending");
