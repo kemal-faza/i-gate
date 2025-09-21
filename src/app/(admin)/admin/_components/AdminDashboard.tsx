@@ -14,7 +14,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +37,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  fetchAttendancesAction,
+  fetchDiscountsAction,
+  fetchOrdersAction,
+} from "../actions";
 import { formatCurrency, formatDateTime } from "./format";
 
 type OrderRecord = {
@@ -69,6 +74,14 @@ type DiscountRecord = {
   created_at: string;
 };
 
+type AttendanceRecord = {
+  id: string;
+  ticket_code: string;
+  attendee_name: string | null;
+  checked_in_at: string;
+  checked_in_by: string | null;
+};
+
 type NewDiscountState = {
   code: string;
   percentOff: string;
@@ -89,13 +102,29 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState<string | null>(null);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const ordersPageSize = 10;
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  const [ordersPendingTotal, setOrdersPendingTotal] = useState(0);
+  const [ordersRevenue, setOrdersRevenue] = useState(0);
 
   const [discounts, setDiscounts] = useState<DiscountRecord[]>([]);
   const [discountsLoading, setDiscountsLoading] = useState(false);
   const [discountsError, setDiscountsError] = useState<string | null>(null);
+  const [discountsPage, setDiscountsPage] = useState(1);
+  const discountsPageSize = 10;
+  const [discountsTotal, setDiscountsTotal] = useState(0);
+  const [activeDiscountsTotal, setActiveDiscountsTotal] = useState(0);
   const [mutatingDiscountId, setMutatingDiscountId] = useState<string | null>(
     null,
   );
+
+  const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
+  const [attendancesLoading, setAttendancesLoading] = useState(false);
+  const [attendancesError, setAttendancesError] = useState<string | null>(null);
+  const [attendancesPage, setAttendancesPage] = useState(1);
+  const attendancesPageSize = 10;
+  const [attendancesTotal, setAttendancesTotal] = useState(0);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogState, setDialogState] =
@@ -106,15 +135,30 @@ export default function AdminDashboard() {
   const loadOrders = useCallback(async () => {
     setOrdersLoading(true);
     try {
-      const res = await fetch("/api/orders", { cache: "no-store" });
-      const payload = (await res.json().catch(() => null)) as {
-        orders?: OrderRecord[];
-        error?: string;
-      } | null;
-      if (!res.ok) {
-        throw new Error(payload?.error ?? "Failed to load orders");
-      }
-      setOrders(payload?.orders ?? []);
+      const { rows, total, pending, revenue } = await fetchOrdersAction(
+        ordersPage,
+        ordersPageSize,
+      );
+      setOrders(
+        rows.map((row) => ({
+          id: row.id,
+          tier_key: row.tierKey,
+          tier_label: row.tierLabel,
+          total: row.total,
+          gross_amount: row.grossAmount,
+          payment_type: row.paymentType,
+          status: row.status,
+          name: row.name,
+          nim: row.nim,
+          email: row.email,
+          discount_code: row.discountCode,
+          discount_percent: row.discountPercent,
+          created_at: row.createdAt,
+        })),
+      );
+      setOrdersTotal(total);
+      setOrdersPendingTotal(pending);
+      setOrdersRevenue(revenue);
       setOrdersError(null);
     } catch (error) {
       console.error(error);
@@ -124,20 +168,30 @@ export default function AdminDashboard() {
     } finally {
       setOrdersLoading(false);
     }
-  }, []);
+  }, [ordersPage]);
 
   const loadDiscounts = useCallback(async () => {
     setDiscountsLoading(true);
     try {
-      const res = await fetch("/api/discounts", { cache: "no-store" });
-      const payload = (await res.json().catch(() => null)) as {
-        discounts?: DiscountRecord[];
-        error?: string;
-      } | null;
-      if (!res.ok) {
-        throw new Error(payload?.error ?? "Failed to load discounts");
-      }
-      setDiscounts(payload?.discounts ?? []);
+      const { rows, total, active } = await fetchDiscountsAction(
+        discountsPage,
+        discountsPageSize,
+      );
+      setDiscounts(
+        rows.map((row) => ({
+          id: row.id,
+          code: row.code,
+          percent_off: row.percentOff,
+          description: row.description,
+          active: row.active,
+          max_uses: row.maxUses,
+          usage_count: row.usageCount,
+          expires_at: row.expiresAt,
+          created_at: row.createdAt,
+        })),
+      );
+      setDiscountsTotal(total);
+      setActiveDiscountsTotal(active);
       setDiscountsError(null);
     } catch (error) {
       console.error(error);
@@ -147,35 +201,61 @@ export default function AdminDashboard() {
     } finally {
       setDiscountsLoading(false);
     }
-  }, []);
+  }, [discountsPage]);
+
+  const loadAttendances = useCallback(async () => {
+    setAttendancesLoading(true);
+    try {
+      const { rows, total } = await fetchAttendancesAction(
+        attendancesPage,
+        attendancesPageSize,
+      );
+      setAttendances(
+        rows.map((row) => ({
+          id: row.id,
+          ticket_code: row.ticketCode,
+          attendee_name: row.attendeeName,
+          checked_in_at: row.checkedInAt,
+          checked_in_by: row.checkedInBy,
+        })),
+      );
+      setAttendancesTotal(total);
+      setAttendancesError(null);
+    } catch (error) {
+      console.error(error);
+      setAttendancesError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load attendance records",
+      );
+    } finally {
+      setAttendancesLoading(false);
+    }
+  }, [attendancesPage]);
 
   useEffect(() => {
     void loadOrders();
-    void loadDiscounts();
-  }, [loadOrders, loadDiscounts]);
+  }, [loadOrders]);
 
-  const totalOrders = orders.length;
-  const pendingOrders = useMemo(
-    () => orders.filter((order) => order.status === "pending").length,
-    [orders],
-  );
-  const totalRevenue = useMemo(() => {
-    return orders
-      .filter((order) => order.status.toLowerCase() === "paid")
-      .reduce((sum, order) => {
-        const gross = order.gross_amount ?? order.total ?? 0;
-        return sum + gross;
-      }, 0);
-  }, [orders]);
-  const activeDiscounts = useMemo(
-    () => discounts.filter((discount) => discount.active).length,
-    [discounts],
-  );
+  useEffect(() => {
+    void loadDiscounts();
+  }, [loadDiscounts]);
+
+  useEffect(() => {
+    void loadAttendances();
+  }, [loadAttendances]);
+
+  const totalOrders = ordersTotal;
+  const pendingOrders = ordersPendingTotal;
+  const totalRevenue = ordersRevenue;
+  const activeDiscounts = activeDiscountsTotal;
+  const checkedInCount = attendancesTotal;
 
   const handleRefreshAll = useCallback(() => {
     void loadOrders();
     void loadDiscounts();
-  }, [loadOrders, loadDiscounts]);
+    void loadAttendances();
+  }, [loadOrders, loadDiscounts, loadAttendances]);
 
   const handleToggleDiscount = useCallback(
     async (discount: DiscountRecord) => {
@@ -343,6 +423,11 @@ export default function AdminDashboard() {
           icon={<BadgePercent className="size-4" />}
           label="Active Discounts"
           value={activeDiscounts.toString()}
+        />
+        <KpiCard
+          icon={<TicketIcon className="size-4" />}
+          label="Checked-in"
+          value={checkedInCount.toString()}
         />
       </section>
 
@@ -518,6 +603,13 @@ export default function AdminDashboard() {
             </TableBody>
           </Table>
         </div>
+        <PaginationControls
+          page={ordersPage}
+          pageSize={ordersPageSize}
+          total={ordersTotal}
+          onPageChange={(next) => setOrdersPage(next)}
+          disabled={ordersLoading}
+        />
       </section>
 
       <section className="rounded-lg border bg-background p-4">
@@ -625,7 +717,125 @@ export default function AdminDashboard() {
             </TableBody>
           </Table>
         </div>
+        <PaginationControls
+          page={discountsPage}
+          pageSize={discountsPageSize}
+          total={discountsTotal}
+          onPageChange={(next) => setDiscountsPage(next)}
+          disabled={discountsLoading}
+        />
       </section>
+
+      <section className="rounded-lg border bg-background p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">Attendance</h2>
+            <p className="text-xs text-muted-foreground">
+              Records from the `event` table (ticket check-ins).
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void loadAttendances()}
+            disabled={attendancesLoading}
+          >
+            <RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh
+          </Button>
+        </div>
+        <Separator className="my-3" />
+        {attendancesError ? (
+          <p className="text-sm text-destructive">{attendancesError}</p>
+        ) : null}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableCaption>
+              {attendancesLoading
+                ? "Loading attendance records…"
+                : attendances.length === 0
+                  ? "No check-ins recorded yet."
+                  : "Latest attendance rows."}
+            </TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ticket</TableHead>
+                <TableHead>Attendee</TableHead>
+                <TableHead>Checked-in</TableHead>
+                <TableHead>Operator</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {attendances.map((record) => (
+                <TableRow key={`${record.id}-${record.checked_in_at}`}>
+                  <TableCell className="font-mono text-xs">
+                    {record.ticket_code}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {record.attendee_name ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {formatDateTime(record.checked_in_at)}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {record.checked_in_by ?? "system"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <PaginationControls
+          page={attendancesPage}
+          pageSize={attendancesPageSize}
+          total={attendancesTotal}
+          onPageChange={(next) => setAttendancesPage(next)}
+          disabled={attendancesLoading}
+        />
+      </section>
+    </div>
+  );
+}
+
+function PaginationControls({
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  disabled,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
+  disabled?: boolean;
+}) {
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const canPrev = page > 1;
+  const canNext = page < pageCount;
+
+  return (
+    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <span className="text-xs text-muted-foreground">
+        Page {page} of {pageCount} • {total} rows
+      </span>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          disabled={!canPrev || disabled}
+        >
+          Prev
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onPageChange(Math.min(pageCount, page + 1))}
+          disabled={!canNext || disabled}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 }
