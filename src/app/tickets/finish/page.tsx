@@ -1,9 +1,28 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import InteractiveBadge from "@/components/tickets/InteractiveBadge";
+import QrDownloadButton from "@/components/tickets/QrDownloadButton";
 import { Button } from "@/components/ui/button";
+import { OG_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Status Pemesanan",
+  description: `${SITE_DESCRIPTION} Lacak status pembayaran tiket dan akses QR resmi I-GATE 2025 di halaman ini.`,
+  openGraph: {
+    title: `Status Pemesanan | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} Pantau pembayaran dan QR kode tiketmu secara real time.`,
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    title: `Status Pemesanan | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} Pantau pembayaran dan QR kode tiketmu secara real time.`,
+    images: [OG_IMAGE],
+  },
+};
 
 type OrderRecord = {
   id: string;
@@ -35,7 +54,7 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
     tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600",
     background: "border-emerald-500/30 bg-emerald-500/5",
     description:
-      "Payment confirmed. Present this QR code at the entrance and keep the UUID handy for support.",
+      "Pembayaran udah kelar! Tunjukin QR code ini pas masuk, terus simpen UUID-nya biar gampang kalo butuh bantuan.",
   },
   pending: {
     label: "Pending",
@@ -184,9 +203,14 @@ export default async function TicketFinishPage({ searchParams }: Props) {
   const discountLabel = order.discount_code
     ? `${order.discount_code.toUpperCase()} (${discountPercent}% off)`
     : "None";
+  const badgeInitial = order.name?.trim()?.charAt(0)?.toUpperCase() ?? "Y";
+  const encodedOrderId = encodeURIComponent(order.id);
+  const qrDisplayUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodedOrderId}`;
+  const qrDownloadUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodedOrderId}`;
+  const downloadFileName = `ticket-${order.id}.png`;
 
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-4xl flex-col gap-10 px-6 py-12">
+    <div className="mx-auto flex min-h-[60vh] max-w-5xl flex-col gap-10 px-6 py-12">
       <header className="space-y-3">
         <div className={`rounded-xl border p-5 shadow-sm ${config.background}`}>
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -201,12 +225,16 @@ export default async function TicketFinishPage({ searchParams }: Props) {
             <StatusBadge config={config} />
           </div>
         </div>
+        <div className="rounded-lg border-l-4 border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          Jangan dishare link ini ke siapa pun ya. Soalnya di dalemnya udah ada
+          semua yang lo butuhin buat ngeklaim tiket.
+        </div>
       </header>
 
-      <section className="grid gap-8 md:grid-cols-[minmax(0,_1fr)_240px]">
+      <section className="grid gap-8 lg:grid-cols-[minmax(0,_1fr)_320px]">
         <div className="space-y-6">
           <article className="rounded-lg border bg-card p-5 shadow-sm">
-            <h2 className="text-lg font-semibold">Ticket details</h2>
+            <h2 className="text-lg font-semibold">Detail tiket</h2>
             <dl className="mt-4 grid grid-cols-1 gap-4 text-sm">
               <div className="flex flex-col gap-1">
                 <dt className="text-muted-foreground">Order UUID</dt>
@@ -227,11 +255,11 @@ export default async function TicketFinishPage({ searchParams }: Props) {
                 </dd>
               </div>
               <div className="flex flex-col gap-1">
-                <dt className="text-muted-foreground">Total charged</dt>
+                <dt className="text-muted-foreground">Total dibayar</dt>
                 <dd className="font-medium">{totalDisplay}</dd>
               </div>
               <div className="flex flex-col gap-1">
-                <dt className="text-muted-foreground">Discount</dt>
+                <dt className="text-muted-foreground">Diskon</dt>
                 <dd className="font-medium">{discountLabel}</dd>
               </div>
               <div className="flex flex-col gap-1">
@@ -261,11 +289,11 @@ export default async function TicketFinishPage({ searchParams }: Props) {
 
           <div className="flex flex-wrap gap-3">
             <Button asChild variant="default">
-              <Link href="/tickets">Back to tickets</Link>
+              <Link href="/tickets">Balik ke halaman tiket</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href={`/tickets?order=${encodeURIComponent(order.id)}`}>
-                Start new checkout
+              <Link href={`/tickets?order=${encodedOrderId}`}>
+                Mulai checkout baru
               </Link>
             </Button>
           </div>
@@ -275,14 +303,14 @@ export default async function TicketFinishPage({ searchParams }: Props) {
           <h2 className="text-base font-semibold">Event QR</h2>
           <p className="text-muted-foreground mt-1 text-sm">
             {isPaid
-              ? "Show this QR at the entrance."
+              ? "Tunjukin QR ini pas di pintu masuk."
               : "QR unlocks after the payment settles."}
           </p>
           <div className="mt-5 flex items-center justify-center">
             {isPaid ? (
               <Image
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(order.id)}`}
-                alt={`QR code for order ${order.id}`}
+                src={qrDisplayUrl}
+                alt={`QR code untuk order ${order.id}`}
                 width={200}
                 height={200}
                 className="rounded border bg-white p-2 shadow"
@@ -294,7 +322,32 @@ export default async function TicketFinishPage({ searchParams }: Props) {
               </div>
             )}
           </div>
+          <div className="mt-4">
+            <QrDownloadButton
+              qrUrl={qrDownloadUrl}
+              fileName={downloadFileName}
+              disabled={!isPaid}
+            />
+          </div>
         </aside>
+      </section>
+
+      <section className="rounded-lg border bg-card p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Interactive event badge</h2>
+            <p className="text-muted-foreground text-sm">
+              Drag, flick, dan jelajahi badge digital kamu. QR-nya sama persis
+              kayak yang tampil di halaman ini.
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 h-[320px] w-full overflow-hidden rounded-lg border bg-black/70">
+          <InteractiveBadge initial={badgeInitial} qrUrl={qrDownloadUrl} />
+        </div>
+        <p className="text-muted-foreground mt-3 text-xs">
+          Tip: tap dan tahan di mobile buat pindahin badge 3D-nya sesuka kamu.
+        </p>
       </section>
     </div>
   );

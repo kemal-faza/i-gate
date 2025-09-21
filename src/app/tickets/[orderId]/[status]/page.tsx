@@ -1,6 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Status Pembayaran",
+  description: `${SITE_DESCRIPTION} Halaman status lama untuk referensi pembayaran I-GATE.`,
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    title: `Status Pembayaran | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} Halaman status lama untuk referensi pembayaran I-GATE.`,
+  },
+};
 
 const STATUS_CONFIG: Record<string, { title: string; subtitle: string }> = {
   finish: {

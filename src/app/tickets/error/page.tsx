@@ -1,5 +1,24 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Pembayaran Gagal",
+  description: `${SITE_DESCRIPTION} Transaksi Anda belum berhasil. Periksa kembali detail pembayaran atau hubungi panitia.`,
+  openGraph: {
+    title: `Pembayaran Gagal | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} Transaksi Anda belum berhasil. Periksa kembali detail pembayaran atau hubungi panitia.`,
+  },
+  twitter: {
+    title: `Pembayaran Gagal | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} Transaksi Anda belum berhasil. Periksa kembali detail pembayaran atau hubungi panitia.`,
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function TicketErrorFallbackPage() {
   return (
