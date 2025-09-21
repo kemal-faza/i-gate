@@ -196,6 +196,9 @@ export async function createMidtransTokenAction(input: CreateSnapTokenInput) {
     //   unfinish: `${baseUrl}/tickets/unfinish?uuid=${orderParam}`,
     //   error: `${baseUrl}/tickets/error?uuid=${orderParam}`,
     // },
+    callbacks: function() {
+    // do nothing, same as javascript:void(0)
+  }
     // credit_card: {
     //   secure: true,
     // },
