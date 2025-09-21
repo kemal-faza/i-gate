@@ -437,8 +437,8 @@ export function InteractiveBadge({ initial, qrUrl }: InteractiveBadgeProps) {
         >
           <Band initial={initial} qrUrl={qrUrl} />
         </Physics>
-        {/* <Environment background blur={0.75}>
-          <color attach="background" args={["black"]} />
+        <Environment >
+          {/* <color attach="background" args={["black"]} /> */}
           <Lightformer
             intensity={2}
             color="white"
@@ -467,7 +467,7 @@ export function InteractiveBadge({ initial, qrUrl }: InteractiveBadgeProps) {
             rotation={[0, Math.PI / 2, Math.PI / 3]}
             scale={[100, 10, 1]}
           />
-        </Environment> */}
+        </Environment>
       </Suspense>
     </Canvas>
   );

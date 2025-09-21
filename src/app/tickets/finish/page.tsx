@@ -210,7 +210,7 @@ export default async function TicketFinishPage({ searchParams }: Props) {
   const downloadFileName = `ticket-${order.id}.png`;
 
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-5xl flex-col gap-10 px-6 py-12">
+    <div className="mx-auto flex min-h-[60vh]  flex-col gap-10 px-6 py-12">
       <header className="space-y-3">
         <div className={`rounded-xl border p-5 shadow-sm ${config.background}`}>
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -231,6 +231,107 @@ export default async function TicketFinishPage({ searchParams }: Props) {
         </div>
       </header>
 
+ <div className="flex w-full flex-col md:flex-row">
+
+          <div className="w-2/5 hidden md:block p-8">
+         <InteractiveBadge initial={badgeInitial} qrUrl={qrDownloadUrl} />
+          </div>
+
+          <div className="w-full md:w-3/5 p-4 md:p-8 flex flex-col gap-4">
+            <div className="w-full">
+      
+          <article className="rounded-lg border bg-card p-4 md:p-5 shadow-sm">
+            <h2 className="text-lg font-semibold">Detail tiket</h2>
+            <dl className="mt-4 grid grid-cols-1 gap-4 text-sm">
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Order UUID</dt>
+                <dd className="font-mono text-base">{order.id}</dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Tier</dt>
+                <dd className="font-medium">{order.tier_label ?? "—"}</dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Customer</dt>
+                <dd className="font-medium">{order.name ?? "—"}</dd>
+                <dd className="text-xs text-muted-foreground">
+                  {order.email ?? ""}
+                </dd>
+                <dd className="text-xs text-muted-foreground">
+                  {order.nim ? `NIM ${order.nim}` : ""}
+                </dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Total dibayar</dt>
+                <dd className="font-medium">{totalDisplay}</dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Diskon</dt>
+                <dd className="font-medium">{discountLabel}</dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Payment type</dt>
+                <dd className="font-medium">
+                  {formatPaymentType(order.payment_type)}
+                </dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Transaction ID</dt>
+                <dd className="font-medium">{order.transaction_id ?? "—"}</dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Created at</dt>
+                <dd className="font-medium">
+                  {formatDateTime(order.created_at)}
+                </dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Paid at</dt>
+                <dd className="font-medium">
+                  {isPaid ? formatDateTime(order.paid_at) : "—"}
+                </dd>
+              </div>
+            </dl>
+          </article>
+
+            </div>
+      <div className="w-full">
+         
+    <aside className="rounded-lg border bg-card p-4 md:p-5 text-center shadow-sm">
+          <h2 className="text-base font-semibold">Event QR</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {isPaid
+              ? "Tunjukin QR ini pas di pintu masuk."
+              : "QR unlocks after the payment settles."}
+          </p>
+          <div className="mt-5 flex items-center justify-center">
+            {isPaid ? (
+              <Image
+                src={qrDisplayUrl}
+                alt={`QR code untuk order ${order.id}`}
+                width={200}
+                height={200}
+                className="rounded border bg-white p-2 shadow"
+                priority
+              />
+            ) : (
+              <div className="flex min-h-[220px] w-full items-center justify-center rounded-md border border-dashed bg-muted/40 p-6 text-sm text-muted-foreground">
+                Waiting for settlement
+              </div>
+            )}
+          </div>
+          <div className="mt-4">
+            <QrDownloadButton
+              qrUrl={qrDownloadUrl}
+              fileName={downloadFileName}
+              disabled={!isPaid}
+            />
+          </div>
+        </aside>
+            </div>
+          </div>
+        </div>
+{/* 
       <section className="grid gap-8 lg:grid-cols-[minmax(0,_1fr)_320px]">
         <div className="space-y-6">
           <article className="rounded-lg border bg-card p-5 shadow-sm">
@@ -330,9 +431,9 @@ export default async function TicketFinishPage({ searchParams }: Props) {
             />
           </div>
         </aside>
-      </section>
+      </section> */}
 
-      <section className="rounded-lg border bg-card p-5 shadow-sm">
+      <section className="rounded-lg border bg-card p-5 shadow-sm md:hidden">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Interactive event badge</h2>
@@ -349,6 +450,16 @@ export default async function TicketFinishPage({ searchParams }: Props) {
           Tip: tap dan tahan di mobile buat pindahin badge 3D-nya sesuka kamu.
         </p>
       </section>
+        <div className="flex flex-wrap gap-3">
+            <Button asChild variant="default">
+              <Link href="/tickets">Balik ke halaman tiket</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/tickets?order=${encodedOrderId}`}>
+                Mulai checkout baru
+              </Link>
+            </Button>
+          </div>
     </div>
   );
 }
