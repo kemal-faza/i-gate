@@ -289,7 +289,7 @@ export default function TicketsPage() {
       if (window.snap) {
         window.snap.pay(token, {
           onSuccess: () => {
-            const destination = `/tickets/finish?uuid=${encodeURIComponent(orderUuid)}`;
+            const destination = `/tickets/finish?uuid=${encodeURIComponent(orderUuid)}&first=true`;
             router.push(destination);
           },
           onPending: () => {

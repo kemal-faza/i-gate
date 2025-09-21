@@ -6,7 +6,7 @@ import QrDownloadButton from "@/components/tickets/QrDownloadButton";
 import { Button } from "@/components/ui/button";
 import { OG_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 import { getSupabaseAdmin } from "@/lib/supabase";
-
+import ConfettiOnce from "./confetti-first";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -84,6 +84,7 @@ const FALLBACK_STATUS = STATUS_CONFIG.pending;
 type Props = {
   searchParams: {
     uuid?: string;
+    first?: string;
   };
 };
 
@@ -157,6 +158,7 @@ function EmptyState({
 
 export default async function TicketFinishPage({ searchParams }: Props) {
   const uuid = searchParams?.uuid?.trim();
+  const first = searchParams?.first?.trim();
 
   if (!uuid) {
     return (
@@ -460,6 +462,8 @@ export default async function TicketFinishPage({ searchParams }: Props) {
               </Link>
             </Button>
           </div>
+
+           <ConfettiOnce first={first || null} />
     </div>
   );
 }
