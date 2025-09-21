@@ -191,11 +191,11 @@ export async function createMidtransTokenAction(input: CreateSnapTokenInput) {
       first_name: input.customer.name || "Customer",
       email: input.customer.email,
     },
-    callbacks: {
-      finish: `${baseUrl}/tickets/finish?uuid=${orderParam}`,
-      unfinish: `${baseUrl}/tickets/unfinish?uuid=${orderParam}`,
-      error: `${baseUrl}/tickets/error?uuid=${orderParam}`,
-    },
+    // callbacks: {
+    //   finish: `${baseUrl}/tickets/finish?uuid=${orderParam}`,
+    //   unfinish: `${baseUrl}/tickets/unfinish?uuid=${orderParam}`,
+    //   error: `${baseUrl}/tickets/error?uuid=${orderParam}`,
+    // },
     credit_card: {
       secure: true,
     },
