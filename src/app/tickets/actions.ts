@@ -201,6 +201,8 @@ export async function createMidtransTokenAction(input: CreateSnapTokenInput) {
     // },
   });
 
+  console.log("TRANSACTION REDIRECT URL", transaction.redirect_url);
+
   return {
     token: transaction.token as string,
     // redirect_url: transaction.redirect_url as string,
