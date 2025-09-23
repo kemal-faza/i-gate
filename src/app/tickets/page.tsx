@@ -1,11 +1,12 @@
 'use client';
 
-import { Turnstile } from '@marsidev/react-turnstile';
-import type { LucideIcon } from 'lucide-react';
-import { CheckCircle2, Crown, Gem, Ticket as TicketIcon } from 'lucide-react';
-import type { FormEvent } from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Turnstile } from "@marsidev/react-turnstile";
+import type { LucideIcon } from "lucide-react";
+import { CheckCircle2, Crown, Gem, Ticket as TicketIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -124,21 +125,22 @@ const formatIDR = (n: number) =>
 	}).format(n);
 
 export default function TicketsPage() {
-	const [selectedTier, setSelectedTier] = useState<TierKey>('regular');
-	const [name, setName] = useState('');
-	const [nim, setNim] = useState('');
-	const [email, setEmail] = useState('');
-	const [discountCodeInput, setDiscountCodeInput] = useState<string>('');
-	const [appliedDiscount, setAppliedDiscount] =
-		useState<AppliedDiscount | null>(null);
-	const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
-	const [discountError, setDiscountError] = useState<string | null>(null);
-	const [open, setOpen] = useState(false);
-	const [isLoading, setIsLoading] = useState(false);
-	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-	const [turnstileError, setTurnstileError] = useState<string | null>(null);
-	const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0);
-	const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const router = useRouter();
+  const [selectedTier, setSelectedTier] = useState<TierKey>("regular");
+  const [name, setName] = useState("");
+  const [nim, setNim] = useState("");
+  const [email, setEmail] = useState("");
+  const [discountCodeInput, setDiscountCodeInput] = useState<string>("");
+  const [appliedDiscount, setAppliedDiscount] =
+    useState<AppliedDiscount | null>(null);
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileError, setTurnstileError] = useState<string | null>(null);
+  const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
 	const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
@@ -283,26 +285,26 @@ export default function TicketsPage() {
 			setCurrentOrderId(orderUuid);
 			setDiscountError(null);
 
-			if (window.snap) {
-				window.snap.pay(token, {
-					onSuccess: () => {
-						setOpen(true);
-					},
-					onPending: () => {
-						console.log('pending');
-						// setOpen(true);
-					},
-					onError: () => alert('Payment failed. Try again.'),
-					onClose: () => {},
-				});
-			} else {
-				alert('Payment SDK not loaded.');
-			}
-		} catch (e) {
-			console.error(e);
-			const message =
-				e instanceof Error ? e.message : 'Error starting payment';
-			const lower = message.toLowerCase();
+      if (window.snap) {
+        window.snap.pay(token, {
+          onSuccess: () => {
+            const destination = `/tickets/finish?uuid=${encodeURIComponent(orderUuid)}&first=true`;
+            router.push(destination);
+          },
+          onPending: () => {
+            console.log("pending");
+            // setOpen(true);
+          },
+          onError: () => alert("Payment failed. Try again."),
+          onClose: () => {},
+        });
+      } else {
+        alert("Payment SDK not loaded.");
+      }
+    } catch (e) {
+      console.error(e);
+      const message = e instanceof Error ? e.message : "Error starting payment";
+      const lower = message.toLowerCase();
 
 			if (lower.includes('human')) {
 				turnstileMessage = message;

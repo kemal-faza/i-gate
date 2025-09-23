@@ -172,6 +172,8 @@ export async function createMidtransTokenAction(input: CreateSnapTokenInput) {
       ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL.replace(/\/$/, "")}`
       : "http://localhost:3000");
 
+  const orderParam = encodeURIComponent(input.orderUuid);
+
   const transaction = await snap.createTransaction({
     transaction_details: {
       order_id: input.orderUuid,
@@ -189,18 +191,23 @@ export async function createMidtransTokenAction(input: CreateSnapTokenInput) {
       first_name: input.customer.name || "Customer",
       email: input.customer.email,
     },
-    callbacks: {
-      finish: `${baseUrl}/tickets/${input.orderUuid}/finish`,
-      unfinish: `${baseUrl}/tickets/${input.orderUuid}/unfinish`,
-      error: `${baseUrl}/tickets/${input.orderUuid}/error`,
-    },
-    credit_card: {
-      secure: true,
-    },
+    // callbacks: {
+    //   finish: `${baseUrl}/tickets/finish?uuid=${orderParam}`,
+    //   unfinish: `${baseUrl}/tickets/unfinish?uuid=${orderParam}`,
+    //   error: `${baseUrl}/tickets/error?uuid=${orderParam}`,
+    // },
+    callbacks: function() {
+    // do nothing, same as javascript:void(0)
+  }
+    // credit_card: {
+    //   secure: true,
+    // },
   });
+
+  console.log("TRANSACTION REDIRECT URL", transaction.redirect_url);
 
   return {
     token: transaction.token as string,
-    redirect_url: transaction.redirect_url as string,
+    // redirect_url: transaction.redirect_url as string,
   };
 }

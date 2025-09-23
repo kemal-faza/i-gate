@@ -1,8 +1,25 @@
-import React from "react";
+import type { Metadata } from "next";
+import Image from "next/image";
 import {
   DraggableCardBody,
   DraggableCardContainer,
 } from "@/components/ui/draggable-card";
+import { OG_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Tentang I-GATE",
+  description: `${SITE_DESCRIPTION} Kenali cerita di balik panggung, tim, dan tradisi Informatika.`,
+  openGraph: {
+    title: `Tentang | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} Kenali cerita di balik panggung, tim, dan tradisi Informatika.`,
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    title: `Tentang | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} Kenali cerita di balik panggung, tim, dan tradisi Informatika.`,
+    images: [OG_IMAGE],
+  },
+};
 
 export default function DraggableCardDemo() {
   const items = [
@@ -47,11 +64,13 @@ export default function DraggableCardDemo() {
       <p className="absolute top-1/2 mx-auto max-w-md -translate-y-3/4 text-center text-2xl font-black text-neutral-400 md:text-4xl dark:text-neutral-800">
         I GATE: Shine, Unite, Celebrate! o(*^＠^*)o
       </p>
-      {items.map((item, i) => (
-        <DraggableCardBody className={item.className} key={i}>
-          <img
+      {items.map((item) => (
+        <DraggableCardBody className={item.className} key={item.title}>
+          <Image
             src={item.image}
             alt={item.title}
+            width={320}
+            height={320}
             className="pointer-events-none relative z-10 h-80 w-80 object-cover"
           />
           <h3 className="mt-4 text-center text-2xl font-bold text-neutral-700 dark:text-neutral-300">

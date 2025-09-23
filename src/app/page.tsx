@@ -1,5 +1,22 @@
-import { Button } from "@/components/ui/button";
+import type { Metadata } from "next";
 import TransitionLink from "@/components/TransitionLink";
+import { Button } from "@/components/ui/button";
+import { OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Beranda",
+  description: `${SITE_DESCRIPTION} Temukan jadwal, penampilan, dan momen spesial Informatics Gathering 2025.`,
+  openGraph: {
+    title: `Beranda | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} ${SITE_TAGLINE}!`,
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    title: `Beranda | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} ${SITE_TAGLINE}!`,
+    images: [OG_IMAGE],
+  },
+};
 
 export default function Home() {
   return (
@@ -12,7 +29,6 @@ export default function Home() {
         loop
         playsInline
         preload="metadata"
-        aria-hidden="true"
       />
       <div className="absolute inset-0 bg-black/40 md:bg-black/50" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/50 to-transparent" />

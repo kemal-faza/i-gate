@@ -43,6 +43,8 @@ export function Navbar({ user }: NavbarProps) {
       await supabase.auth.signOut();
       router.refresh();
       router.push("/");
+      location.reload(); 
+
     } catch (error) {
       console.error("Failed to sign out", error);
     } finally {

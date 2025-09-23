@@ -1,5 +1,24 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Pembayaran Belum Selesai",
+  description: `${SITE_DESCRIPTION} Anda meninggalkan proses pembayaran. Lanjutkan transaksi untuk memastikan tiket tetap aman.`,
+  openGraph: {
+    title: `Pembayaran Belum Selesai | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} Anda meninggalkan proses pembayaran. Lanjutkan transaksi untuk memastikan tiket tetap aman.`,
+  },
+  twitter: {
+    title: `Pembayaran Belum Selesai | ${SITE_NAME}`,
+    description: `${SITE_DESCRIPTION} Anda meninggalkan proses pembayaran. Lanjutkan transaksi untuk memastikan tiket tetap aman.`,
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function TicketUnfinishFallbackPage() {
   return (
